@@ -23,14 +23,13 @@ def conectar_bd():
 # ==========================
 @app.route("/")
 @app.route("/<nombre_admin>", methods=["GET"])
-def inicio(nombre_admin="susana"):
+def inicio(nombre_admin=None):
+
+    if nombre_admin is None:
+        nombre_admin = session.get("ruta_publica", "susana")
 
     if nombre_admin.lower() not in ["susana", "ceci"]:
         return redirect(url_for("inicio"))
-
-    # Solo guarda la ruta si realmente es un administrador válido
-    if nombre_admin.lower() in ["susana", "ceci"]:
-        session["ruta_publica"] = nombre_admin.lower()
 
     conexion = conectar_bd()
     cursor = conexion.cursor(dictionary=True)
@@ -53,6 +52,9 @@ def inicio(nombre_admin="susana"):
         nombre_admin=nombre_admin.capitalize()
     )
 
+@app.route("/favicon.ico")
+def favicon():
+    return "", 204
 # ==========================
 # API DEL BUSCADOR
 # ==========================
