@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Agregar Proveedor</title>
+
+    <style>
+
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+        }
+
+        body{
+
+            background:#F8F4FF;
+            font-family:Arial, Helvetica, sans-serif;
+
+        }
+
+        .form-contenedor{
+
+            width:500px;
+
+            margin:50px auto;
+
+            background:white;
+
+            padding:35px;
+
+            border-radius:20px;
+
+            box-shadow:0 8px 20px rgba(142,68,173,.18);
+
+        }
+
+        h2{
+
+            text-align:center;
+
+            color:#7B2CBF;
+
+            margin-bottom:10px;
+
+            font-size:30px;
+
+        }
+
+        .subtitulo{
+
+            text-align:center;
+
+            color:#777;
+
+            margin-bottom:30px;
+
+            font-size:15px;
+
+        }
+
+        .campo{
+
+            margin-bottom:18px;
+
+        }
+
+        label{
+
+            display:block;
+
+            margin-bottom:8px;
+
+            color:#555;
+
+            font-weight:bold;
+
+        }
+
+        input,
+        textarea{
+
+            width:100%;
+
+            padding:12px;
+
+            border:2px solid #E9D8FD;
+
+            border-radius:12px;
+
+            font-size:15px;
+
+            transition:.3s;
+
+            outline:none;
+
+        }
+
+        input:focus,
+        textarea:focus{
+
+            border-color:#9C4DCC;
+
+            box-shadow:0 0 10px rgba(156,77,204,.20);
+
+        }
+
+        textarea{
+
+            height:90px;
+
+            resize:none;
+
+        }
+
+        .botones{
+
+            display:flex;
+
+            gap:15px;
+
+            margin-top:30px;
+
+        }
+
+        button{
+
+            flex:1;
+
+            background:#9C4DCC;
+
+            color:white;
+
+            border:none;
+
+            padding:14px;
+
+            border-radius:30px;
+
+            font-size:16px;
+
+            font-weight:bold;
+
+            cursor:pointer;
+
+            transition:.3s;
+
+        }
+
+        button:hover{
+
+            background:#7B2CBF;
+
+            transform:scale(1.03);
+
+        }
+
+        .btn-cancelar{
+
+            flex:1;
+
+            background:#EFE5FF;
+
+            color:#7B2CBF;
+
+            text-decoration:none;
+
+            text-align:center;
+
+            padding:14px;
+
+            border-radius:30px;
+
+            font-weight:bold;
+
+            transition:.3s;
+
+        }
+
+        .btn-cancelar:hover{
+
+            background:#D8B4FE;
+
+            color:white;
+
+            transform:scale(1.03);
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="form-contenedor">
+
+    <h2> Nuevo Proveedor</h2>
+
+    <p class="subtitulo">
+        Completa la información para registrar un nuevo proveedor.
+    </p>
+
+    <form method="POST">
+
+        <div class="campo">
+
+            <label>Nombre del Proveedor / Contacto</label>
+
+            <input
+                type="text"
+                name="nombre"
+                placeholder="Ej. Juan Pérez"
+                required>
+
+        </div>
+
+        <div class="campo">
+
+            <label>Nombre de la Empresa</label>
+
+            <input
+                type="text"
+                name="empresa"
+                placeholder="Ej. Papelería ABC"
+                required>
+
+        </div>
+
+        <div class="campo">
+
+            <label>Teléfono</label>
+
+            <input
+                type="text"
+                name="telefono"
+                placeholder="Ej. 6641234567"
+                required>
+
+        </div>
+
+        <div class="campo">
+
+            <label>Correo Electrónico</label>
+
+            <input
+                type="email"
+                name="correo"
+                placeholder="Ej. contacto@empresa.com"
+                required>
+
+        </div>
+
+        <div class="campo">
+
+            <label>Descripción / Notas</label>
+
+            <textarea
+                name="descripcion"
+                placeholder="¿Qué vende o qué servicios ofrece?"
+                required></textarea>
+
+        </div>
+
+        <div class="botones">
+
+            <button type="submit">
+                 Guardar
+            </button>
+
+            <a href="/proveedores" class="btn-cancelar">
+                 Cancelar
+            </a>
+
+        </div>
+
+    </form>
+
+</div>
+
+</body>
+
+</html>

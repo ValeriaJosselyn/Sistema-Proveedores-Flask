@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Mis Proveedores</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+
+    background:#F8F4FF;
+    font-family:Arial, Helvetica, sans-serif;
+
+}
+
+/*================ HEADER ================*/
+
+header{
+
+    background:linear-gradient(135deg,#8E44AD,#B784F7);
+
+    color:white;
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    padding:20px 40px;
+
+    box-shadow:0 6px 15px rgba(0,0,0,.15);
+
+}
+
+header h2{
+
+    font-size:28px;
+
+}
+
+.btn-volver{
+
+    text-decoration:none;
+
+    color:white;
+
+    background:rgba(255,255,255,.2);
+
+    padding:12px 20px;
+
+    border-radius:30px;
+
+    transition:.3s;
+
+    font-weight:bold;
+
+}
+
+.btn-volver:hover{
+
+    background:white;
+
+    color:#8E44AD;
+
+}
+
+/*================ CONTENEDOR ================*/
+
+.contenedor{
+
+    width:90%;
+
+    margin:40px auto;
+
+    background:white;
+
+    border-radius:20px;
+
+    padding:35px;
+
+    box-shadow:0 8px 20px rgba(142,68,173,.15);
+
+}
+
+.titulo-seccion{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    margin-bottom:25px;
+
+}
+
+.titulo-seccion h3{
+
+    color:#7B2CBF;
+
+    font-size:28px;
+
+}
+
+.btn-crear{
+
+    background:#9C4DCC;
+
+    color:white;
+
+    text-decoration:none;
+
+    padding:12px 22px;
+
+    border-radius:30px;
+
+    font-weight:bold;
+
+    transition:.3s;
+
+}
+
+.btn-crear:hover{
+
+    background:#7B2CBF;
+
+    transform:scale(1.05);
+
+}
+
+/*================ TABLA ================*/
+
+table{
+
+    width:100%;
+
+    border-collapse:collapse;
+
+    overflow:hidden;
+
+    border-radius:15px;
+
+}
+
+th{
+
+    background:#F1E4FF;
+
+    color:#6A1B9A;
+
+    padding:16px;
+
+    text-align:left;
+
+}
+
+td{
+
+    padding:15px;
+
+    border-bottom:1px solid #EFE7FA;
+
+}
+
+tr:hover{
+
+    background:#FAF6FF;
+
+}
+
+/*================ BOTONES ================*/
+
+.acciones{
+
+    white-space:nowrap;
+
+}
+
+.btn-editar{
+
+    text-decoration:none;
+
+    background:#B784F7;
+
+    color:white;
+
+    padding:8px 14px;
+
+    border-radius:20px;
+
+    margin-right:8px;
+
+    transition:.3s;
+
+}
+
+.btn-editar:hover{
+
+    background:#8E44AD;
+
+}
+
+.btn-eliminar{
+
+    text-decoration:none;
+
+    background:#F06292;
+
+    color:white;
+
+    padding:8px 14px;
+
+    border-radius:20px;
+
+    transition:.3s;
+
+}
+
+.btn-eliminar:hover{
+
+    background:#D81B60;
+
+}
+
+.mensaje-vacio{
+
+    text-align:center;
+
+    padding:40px;
+
+    color:#777;
+
+    font-size:18px;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<header>
+
+    <h2> Panel de Gestión</h2>
+
+    <a href="/panel" class="btn-volver">
+        ⬅ Volver al Menú
+    </a>
+
+</header>
+
+<div class="contenedor">
+
+    <div class="titulo-seccion">
+
+        <h3>📦 Mis Proveedores</h3>
+
+        <a href="/agregar" class="btn-crear">
+             Agregar Nuevo
+        </a>
+
+    </div>
+
+    {% if proveedores %}
+
+    <table>
+
+        <thead>
+
+            <tr>
+
+                <th>Proveedor</th>
+
+                <th>Empresa</th>
+
+                <th>Teléfono</th>
+
+                <th>Correo</th>
+
+                <th>Acciones</th>
+
+            </tr>
+
+        </thead>
+
+        <tbody>
+
+        {% for p in proveedores %}
+
+        <tr>
+
+            <td><strong>{{ p.nombre_proveedor }}</strong></td>
+
+            <td>{{ p.nombre_empresa }}</td>
+
+            <td>{{ p.telefono }}</td>
+
+            <td>{{ p.correo }}</td>
+
+            <td class="acciones">
+
+                <a href="/editar/{{ p.id }}" class="btn-editar">
+                    ✏️ Editar
+                </a>
+
+                <a href="/eliminar/{{ p.id }}"
+                   class="btn-eliminar"
+                   onclick="return confirm('¿Deseas eliminar este proveedor?');">
+
+                    🗑️ Eliminar
+
+                </a>
+
+            </td>
+
+        </tr>
+
+        {% endfor %}
+
+
+                </tbody>
+
+    </table>
+
+    {% else %}
+
+    <div class="mensaje-vacio">
+
+        📦 Aún no has registrado ningún proveedor.<br><br>
+
+        Haz clic en <strong>" Agregar Nuevo"</strong> para comenzar.
+
+    </div>
+
+    {% endif %}
+
+</div>
+
+</body>
+
+</html>

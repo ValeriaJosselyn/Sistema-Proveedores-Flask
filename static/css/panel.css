@@ -1,0 +1,107 @@
+body{
+
+    margin:0;
+
+    font-family:Arial, Helvetica, sans-serif;
+
+    background:#FBF7FF;
+
+}
+
+
+/* PANEL */
+
+.panel{
+
+    width:600px;
+
+    margin:auto;
+
+    margin-top:80px;
+
+    background:white;
+
+    padding:40px;
+
+    border-radius:25px;
+
+    box-shadow:0 10px 30px rgba(123,44,191,.18);
+
+}
+
+
+/* TITULOS */
+
+h1{
+
+    color:#7B2CBF;
+
+    text-align:center;
+
+    margin-bottom:10px;
+
+}
+
+
+h2{
+
+    color:#6B7280;
+
+    text-align:center;
+
+    margin-bottom:40px;
+
+    font-weight:normal;
+
+}
+
+
+/* MENU */
+
+.menu{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:20px;
+
+}
+
+
+/* BOTONES */
+
+.menu a{
+
+    background:linear-gradient(135deg,#9C4DCC,#C77DFF);
+
+    color:white;
+
+    text-decoration:none;
+
+    padding:18px;
+
+    border-radius:15px;
+
+    text-align:center;
+
+    font-size:18px;
+
+    font-weight:bold;
+
+    transition:.3s;
+
+    box-shadow:0 4px 12px rgba(156,77,204,.25);
+
+}
+
+
+.menu a:hover{
+
+    transform:translateY(-3px);
+
+    box-shadow:0 8px 18px rgba(156,77,204,.35);
+
+    background:linear-gradient(135deg,#7B2CBF,#9C4DCC);
+
+}

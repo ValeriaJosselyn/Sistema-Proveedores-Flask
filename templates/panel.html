@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Panel de Administración</title>
+
+<link rel="stylesheet"
+href="{{ url_for('static', filename='css/panel.css') }}">
+
+</head>
+
+<body>
+
+<div class="panel">
+
+    <h1>   Bienvenida {{ usuario }} </h1>
+
+    <p class="subtitulo">Bienvenida, <strong>{{ usuario }}</strong> 👋 ¿Qué deseas hacer hoy?</p>
+<p style="margin-bottom: 30px;"><a href="/cambiar_contrasena" style="color: #0074C2; font-size: 14px; text-decoration: none; font-weight: bold;">⚙️ Cambiar mi contraseña</a></p>
+
+
+    <div class="menu">
+
+        <a href="/proveedores">
+
+             Mis proveedores
+
+        </a>
+
+        <a href="/agregar">
+
+             Agregar proveedor
+
+        </a>
+
+        <a href="/logout">
+
+             Cerrar sesión
+
+        </a>
+
+    </div>
+
+</div>
+
+</body>
+
+</html>
