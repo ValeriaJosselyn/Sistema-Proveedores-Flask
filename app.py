@@ -23,20 +23,29 @@ def conectar_bd():
 # ==========================
 @app.route("/", methods=["GET"])
 @app.route("/<string:nombre_admin>", methods=["GET"])
-def inicio(nombre_admin="susana"): 
-    # Si entran a "/" por defecto usa "susana".
-    # Si entran a "/susana" o "/ceci", buscará el ID correspondiente en la base de datos.
-    
+def inicio(nombre_admin="susana"):
+
+    session["ruta_publica"] = nombre_admin.lower()
+
     conexion = conectar_bd()
     cursor = conexion.cursor(dictionary=True)
-    cursor.execute("SELECT id FROM usuario WHERE nombre_usuario = %s", (nombre_admin.lower().strip(),))
+
+    cursor.execute(
+        "SELECT id FROM usuario WHERE nombre_usuario = %s",
+        (nombre_admin.lower().strip(),)
+    )
+
     usuario = cursor.fetchone()
+
     cursor.close()
-    
-    # Si escriben un nombre que no existe en la URL, usamos el ID 1 por seguridad
+
     id_coincidencia = usuario["id"] if usuario else 1
-    
-    return render_template("index.html", admin_id=id_coincidencia, nombre_admin=nombre_admin.capitalize())
+
+    return render_template(
+        "index.html",
+        admin_id=id_coincidencia,
+        nombre_admin=nombre_admin.capitalize()
+    )
 
 
 # ==========================
@@ -339,9 +348,11 @@ def cambiar_contrasena():
 @app.route("/logout")
 def logout():
 
+    ruta = session.get("ruta_publica", "susana")
+
     session.clear()
 
-    return redirect(url_for("inicio"))
+    return redirect(url_for("inicio", nombre_admin=ruta))
 
 
 if __name__ == "__main__":
