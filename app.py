@@ -121,7 +121,7 @@ def validar_login():
     AND contrasena=%s
     """
 
-    cursor.execute(sql, (usuario, contrasena))
+    cursor.execute(sql, (usuario.strip().lower(), contrasena))
 
     datos = cursor.fetchone()
 
@@ -130,14 +130,13 @@ def validar_login():
 
     if datos:
 
-     if datos["nombre_usuario"] != session.get("ruta_publica"):
-        return "Este usuario no corresponde a este acceso."
+        if datos["nombre_usuario"].strip().lower() != session.get("ruta_publica").strip().lower():
+         return "Este usuario no corresponde a este acceso."
 
-    session["id_usuario"] = datos["id"]
-    session["usuario"] = datos["nombre_usuario"]
+        session["id_usuario"] = datos["id"]
+        session["usuario"] = datos["nombre_usuario"]
 
     return redirect(url_for("panel"))
-       
 
 
 
