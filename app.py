@@ -36,9 +36,9 @@ def inicio(nombre_admin="susana"):
     cursor = conexion.cursor(dictionary=True)
 
     cursor.execute(
-        "SELECT id FROM usuario WHERE nombre_usuario = %s",
-        (nombre_admin.lower().strip(),)
-    )
+        "SELECT id FROM usuario WHERE LOWER(nombre_usuario)=LOWER(%s)",
+        (nombre_admin.strip(),)
+)
 
     usuario = cursor.fetchone()
 
@@ -117,13 +117,19 @@ def validar_login():
     sql = """
     SELECT *
     FROM usuario
-    WHERE nombre_usuario=%s
+    WHERE LOWER(nombre_usuario)=LOWER(%s)
     AND contrasena=%s
     """
 
-    cursor.execute(sql, (usuario.strip().lower(), contrasena))
+    cursor.execute(sql, (usuario.strip(), contrasena))
 
     datos = cursor.fetchone()
+
+    print("USUARIO:", usuario)
+    print("CONTRASEÑA:", contrasena)
+    print("DATOS:", datos)
+    print("RUTA:", session.get("ruta_publica"))
+
 
     cursor.close()
     conexion.close()
