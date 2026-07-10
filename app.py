@@ -21,9 +21,12 @@ def conectar_bd():
 # ==========================
 # PÁGINA PRINCIPAL
 # ==========================
-@app.route("/", methods=["GET"])
-@app.route("/<string:nombre_admin>", methods=["GET"])
+@app.route("/")
+@app.route("/<nombre_admin>", methods=["GET"])
 def inicio(nombre_admin="susana"):
+
+    if nombre_admin.lower() not in ["susana", "ceci"]:
+        return redirect(url_for("inicio"))
 
     session["ruta_publica"] = nombre_admin.lower()
 
@@ -38,6 +41,7 @@ def inicio(nombre_admin="susana"):
     usuario = cursor.fetchone()
 
     cursor.close()
+    conexion.close()
 
     id_coincidencia = usuario["id"] if usuario else 1
 
@@ -46,7 +50,6 @@ def inicio(nombre_admin="susana"):
         admin_id=id_coincidencia,
         nombre_admin=nombre_admin.capitalize()
     )
-
 
 # ==========================
 # API DEL BUSCADOR
@@ -171,6 +174,8 @@ def mis_proveedores():
 @app.route("/susana")
 def pagina_susana():
 
+    session["ruta_publica"] = "susana"
+
     conexion = conectar_bd()
     cursor = conexion.cursor(dictionary=True)
 
@@ -188,10 +193,10 @@ def pagina_susana():
         admin_id=usuario["id"],
         nombre_admin="Susana"
     )
-
-
 @app.route("/ceci")
 def pagina_ceci():
+
+    session["ruta_publica"] = "ceci"
 
     conexion = conectar_bd()
     cursor = conexion.cursor(dictionary=True)
