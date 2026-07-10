@@ -8,109 +8,165 @@
 </head>
 
 <body>
+
     <header class="encabezado">
         <div class="titulo">
-            <h1>Sistema de Proveedores</h1>       
+            <h1>Sistema de Proveedores</h1>
+        </div>
+
         <div>
             <a href="/login" class="btn-login">
-                 Iniciar sesión
+                Iniciar sesión
             </a>
         </div>
     </header>
 
     <div class="contenedor">
+
         <form method="GET" id="form-busqueda" onsubmit="event.preventDefault();">
+
             <input
                 type="text"
                 id="input-buscar"
                 name="buscar"
                 placeholder="🔍 Buscar proveedor por nombre o descripción..."
                 autocomplete="off">
+
         </form>
 
         <div id="contenedor-resultados"></div>
+
     </div>
 
-    <script>
-    // 🚀 CAPTURAMOS EL ID DE LA ADMINISTRADORA QUE FLASK NOS ENVÍA
-    const adminId = "{{ admin_id }}";
-    
-    let tiempoBusqueda;
+<script>
 
-    inputBuscar.addEventListener('input', () => {
+const adminId = "{{ admin_id }}";
 
-        clearTimeout(tiempoBusqueda);
+const inputBuscar = document.getElementById("input-buscar");
+const contenedorResultados = document.getElementById("contenedor-resultados");
 
-        tiempoBusqueda = setTimeout(() => {
-            buscarProveedores();
-        }, 300);
+// ==============================
+// BUSCAR PROVEEDORES
+// ==============================
+async function buscarProveedores() {
+
+    const valor = inputBuscar.value.trim();
+
+    if (valor === "") {
+
+        contenedorResultados.innerHTML = "";
+        return;
+
+    }
+
+    try {
+
+        const respuesta = await fetch(`/buscar_api?buscar=${encodeURIComponent(valor)}&admin_id=${adminId}`);
+
+        const proveedores = await respuesta.json();
+
+        renderizarTarjetas(proveedores);
+
+    } catch (error) {
+
+        console.error("Error al buscar proveedores:", error);
+
+    }
+
+}
+
+// ==============================
+// PINTAR TARJETAS
+// ==============================
+function renderizarTarjetas(proveedores) {
+
+    contenedorResultados.innerHTML = "";
+
+    if (proveedores.length === 0) {
+
+        contenedorResultados.innerHTML =
+            '<div class="mensaje">No se encontraron proveedores.</div>';
+
+        return;
+
+    }
+
+    proveedores.forEach(proveedor => {
+
+        const tarjeta = document.createElement("div");
+
+        tarjeta.className = "tarjeta";
+
+        tarjeta.innerHTML = `
+
+            <h2>👤 ${proveedor.nombre_proveedor}</h2>
+
+            <p><strong>Empresa:</strong> ${proveedor.nombre_empresa}</p>
+
+            <p><strong>Teléfono:</strong> ${proveedor.telefono}</p>
+
+            <p><strong>Correo:</strong> ${proveedor.correo}</p>
+
+            <p><strong>Descripción:</strong> ${proveedor.descripcion}</p>
+
+            <button class="btn-copiar"
+            onclick="copiarContacto('${proveedor.nombre_proveedor}','${proveedor.telefono}','${proveedor.correo}')">
+
+                Copiar contacto
+
+            </button>
+
+        `;
+
+        contenedorResultados.appendChild(tarjeta);
+
+    });
+
+}
+
+// ==============================
+// COPIAR CONTACTO
+// ==============================
+function copiarContacto(nombre, telefono, correo) {
+
+    const texto =
+`Nombre: ${nombre}
+Teléfono: ${telefono}
+Correo: ${correo}`;
+
+    navigator.clipboard.writeText(texto)
+    .then(() => {
+
+        alert("¡Contacto copiado al portapapeles!");
+
+    })
+    .catch(error => {
+
+        console.error(error);
+
+    });
+
+}
+
+// ==============================
+// BÚSQUEDA EN TIEMPO REAL
+// ==============================
+let tiempoBusqueda;
+
+inputBuscar.addEventListener("input", () => {
+
+    clearTimeout(tiempoBusqueda);
+
+    tiempoBusqueda = setTimeout(() => {
+
+        buscarProveedores();
+
+    }, 300);
 
 });
-    const contenedorResultados = document.getElementById('contenedor-resultados');
 
-    // Función para buscar proveedores en el servidor
-    async function buscarProveedores() {
-        const valor = inputBuscar.value.trim();
-        
-        // SI EL INPUT ESTÁ VACÍO: Limpiamos la pantalla y salimos de inmediato
-        if (valor === '') {
-            contenedorResultados.innerHTML = '';
-            return;
-        }
-
-        try {
-            // 🔥 CORRECCIÓN CLAVE: Ahora le enviamos tanto lo buscado como el admin_id a la API
-            const respuesta = await fetch(`/buscar_api?buscar=${encodeURIComponent(valor)}&admin_id=${adminId}`);
-            const proveedores = await respuesta.json();
-            
-            // Llamamos a la función para pintar los resultados
-            renderizarTarjetas(proveedores);
-        } catch (error) {
-            console.error("Error al buscar proveedores:", error);
-        }
-    }
-
-    // Función para pintar las tarjetas en el HTML
-    function renderizarTarjetas(proveedores) {
-        contenedorResultados.innerHTML = ''; // Limpiar pantalla anterior
-
-        // Si la base de datos volvió vacía pero el usuario sí escribió algo
-        if (proveedores.length === 0) {
-            contenedorResultados.innerHTML = '<div class="mensaje">No se encontraron proveedores.</div>';
-            return;
-        }
-
-        // Si hay resultados, pintamos las tarjetas
-        proveedores.forEach(proveedor => {
-            const tarjeta = document.createElement('div');
-            tarjeta.className = 'tarjeta';
-            
-            tarjeta.innerHTML = `
-                <h2>👤 ${proveedor.nombre_proveedor}</h2>
-                <p><strong> Empresa:</strong> ${proveedor.nombre_empresa}</p>
-                <p><strong>Teléfono:</strong> ${proveedor.telefono}</p>
-                <p><strong>Correo:</strong> ${proveedor.correo}</p>
-                <p><strong>Descripción:</strong> ${proveedor.descripcion}</p>
-                <button class="btn-copiar" onclick="copiarContacto('${proveedor.nombre_proveedor}', '${proveedor.telefono}', '${proveedor.correo}')">
-                     Copiar contacto
-                </button>
-            `;
-            contenedorResultados.appendChild(tarjeta);
-        });
-    }
-
-    // Función interactiva para copiar al portapapeles
-    function copiarContacto(nombre, telefono, correo) {
-        const texto = `Nombre: ${nombre}\nTeléfono: ${telefono}\nCorreo: ${correo}`;
-        navigator.clipboard.writeText(texto).then(() => {
-            alert('¡Contacto copiado al portapapeles! ');
-        }).catch(err => {
-            console.error('Error al copiar: ', err);
-        });
-    }
-
-    // Escuchar cuando el usuario escribe (Búsqueda en tiempo real)
-    inputBuscar.addEventListener('input', buscarProveedores);
 </script>
+
 </body>
+
 </html>
