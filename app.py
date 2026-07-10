@@ -88,9 +88,9 @@ def buscar_api():
 @app.route("/login")
 def login():
 
-    return render_template("login.html")
+    admin = request.args.get("admin", "susana")
 
-
+    return render_template("login.html", admin=admin)
 # ==========================
 # VALIDAR LOGIN
 # ==========================

@@ -14,10 +14,9 @@
             <h1>Sistema de Proveedores</h1>
         </div>
 
-        <div>
-            <a href="/login" class="btn-login">
-                Iniciar sesión
-            </a>
+        <<a href="{{ url_for('login', admin=nombre_admin.lower()) }}" class="btn-login">
+            Iniciar sesión
+        </a>
         </div>
     </header>
 
