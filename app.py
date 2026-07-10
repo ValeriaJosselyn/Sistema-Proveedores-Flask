@@ -124,6 +124,8 @@ def validar_login():
 
         session["usuario"] = datos["nombre_usuario"]
 
+        session["ruta_publica"] = datos["nombre_usuario"].lower()
+
         return redirect(url_for("panel"))
 
     else:
