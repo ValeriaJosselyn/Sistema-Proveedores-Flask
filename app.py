@@ -93,6 +93,8 @@ def login():
 
     admin = request.args.get("admin", "susana")
 
+    session["ruta_publica"] = admin.lower()
+
     return render_template("login.html", admin=admin)
 # ==========================
 # VALIDAR LOGIN
@@ -127,7 +129,6 @@ def validar_login():
 
         session["usuario"] = datos["nombre_usuario"]
 
-        session["ruta_publica"] = datos["nombre_usuario"].lower()
 
         return redirect(url_for("panel"))
 
@@ -145,6 +146,7 @@ def panel():
     if "usuario" not in session:
 
         return redirect(url_for("login"))
+    print(session)
 
     return render_template(
         "panel.html",
@@ -171,50 +173,7 @@ def mis_proveedores():
     cursor.close()
     conexion.close()
     return render_template("proveedores.html", proveedores=mis_provs, usuario=session["usuario"])
-@app.route("/susana")
-def pagina_susana():
 
-    session["ruta_publica"] = "susana"
-
-    conexion = conectar_bd()
-    cursor = conexion.cursor(dictionary=True)
-
-    cursor.execute(
-        "SELECT id FROM usuario WHERE nombre_usuario='susana'"
-    )
-
-    usuario = cursor.fetchone()
-
-    cursor.close()
-    conexion.close()
-
-    return render_template(
-        "index.html",
-        admin_id=usuario["id"],
-        nombre_admin="Susana"
-    )
-@app.route("/ceci")
-def pagina_ceci():
-
-    session["ruta_publica"] = "ceci"
-
-    conexion = conectar_bd()
-    cursor = conexion.cursor(dictionary=True)
-
-    cursor.execute(
-        "SELECT id FROM usuario WHERE nombre_usuario='ceci'"
-    )
-
-    usuario = cursor.fetchone()
-
-    cursor.close()
-    conexion.close()
-
-    return render_template(
-        "index.html",
-        admin_id=usuario["id"],
-        nombre_admin="Ceci"
-    )
 # ==========================
 # AGREGAR PROVEEDOR
 # ==========================
@@ -354,6 +313,8 @@ def cambiar_contrasena():
 # ==========================
 @app.route("/logout")
 def logout():
+
+    print(session)  # Depuración: muestra el contenido de la sesión antes de borrarla
 
     ruta = session.get("ruta_publica", "susana")
 
