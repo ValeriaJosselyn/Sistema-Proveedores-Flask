@@ -93,6 +93,7 @@ def login():
 
     admin = request.args.get("admin", "susana")
 
+
     session["ruta_publica"] = admin.lower()
 
     return render_template("login.html", admin=admin)
@@ -314,14 +315,14 @@ def cambiar_contrasena():
 @app.route("/logout")
 def logout():
 
-    print(session)  # Depuración: muestra el contenido de la sesión antes de borrarla
+    print("SESSION:", dict(session))
 
     ruta = session.get("ruta_publica", "susana")
+
 
     session.clear()
 
     return redirect(url_for("inicio", nombre_admin=ruta))
-
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
