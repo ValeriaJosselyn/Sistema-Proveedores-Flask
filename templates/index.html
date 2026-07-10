@@ -35,7 +35,17 @@
     // 🚀 CAPTURAMOS EL ID DE LA ADMINISTRADORA QUE FLASK NOS ENVÍA
     const adminId = "{{ admin_id }}";
     
-    const inputBuscar = document.getElementById('input-buscar');
+    let tiempoBusqueda;
+
+    inputBuscar.addEventListener('input', () => {
+
+        clearTimeout(tiempoBusqueda);
+
+        tiempoBusqueda = setTimeout(() => {
+            buscarProveedores();
+        }, 300);
+
+});
     const contenedorResultados = document.getElementById('contenedor-resultados');
 
     // Función para buscar proveedores en el servidor
