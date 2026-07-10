@@ -10,13 +10,14 @@ app.secret_key = "sistema_proveedores_2026"
 # ==========================
 # CONEXIÓN
 # ==========================
-conexion = mysql.connector.connect(
-    host=config.DB_HOST,
-    user=config.DB_USER,
-    password=config.DB_PASSWORD,
-    database=config.DB_NAME,
-    port=config.DB_PORT
-)
+def conectar_bd():
+    return mysql.connector.connect(
+        host=config.DB_HOST,
+        user=config.DB_USER,
+        password=config.DB_PASSWORD,
+        database=config.DB_NAME,
+        port=config.DB_PORT
+    )
 # ==========================
 # PÁGINA PRINCIPAL
 # ==========================
@@ -26,7 +27,7 @@ def inicio(nombre_admin="susana"):
     # Si entran a "/" por defecto usa "susana".
     # Si entran a "/susana" o "/ceci", buscará el ID correspondiente en la base de datos.
     
-    conexion.ping(reconnect=True)
+    conexion = conectar_bd()
     cursor = conexion.cursor(dictionary=True)
     cursor.execute("SELECT id FROM usuario WHERE nombre_usuario = %s", (nombre_admin.lower().strip(),))
     usuario = cursor.fetchone()
@@ -48,7 +49,7 @@ def buscar_api():
     admin_id = request.args.get("admin_id", 1)
 
     try:
-        conexion.ping(reconnect=True, attempts=3, delay=1)
+        conexion = conectar_bd()
         cursor = conexion.cursor(dictionary=True, buffered=True)
 
         if busqueda:
@@ -91,6 +92,7 @@ def validar_login():
 
     contrasena = request.form["contrasena"]
 
+    conexion = conectar_bd()
     cursor = conexion.cursor(dictionary=True)
 
     sql = """
@@ -105,6 +107,7 @@ def validar_login():
     datos = cursor.fetchone()
 
     cursor.close()
+    conexion.close()
 
     if datos:
 
@@ -145,16 +148,57 @@ def mis_proveedores():
     
     id_admin = session["id_usuario"]
     
-    conexion.ping(reconnect=True)
+    conexion = conectar_bd()
     cursor = conexion.cursor(dictionary=True)
     
     # Filtramos para que Susana o Ceci solo vean lo suyo
     cursor.execute("SELECT * FROM proveedor WHERE id_usuario = %s", (id_admin,))
     mis_provs = cursor.fetchall()
     cursor.close()
-    
+    conexion.close()
     return render_template("proveedores.html", proveedores=mis_provs, usuario=session["usuario"])
+@app.route("/susana")
+def pagina_susana():
 
+    conexion = conectar_bd()
+    cursor = conexion.cursor(dictionary=True)
+
+    cursor.execute(
+        "SELECT id FROM usuario WHERE nombre_usuario='susana'"
+    )
+
+    usuario = cursor.fetchone()
+
+    cursor.close()
+    conexion.close()
+
+    return render_template(
+        "index.html",
+        admin_id=usuario["id"],
+        nombre_admin="Susana"
+    )
+
+
+@app.route("/ceci")
+def pagina_ceci():
+
+    conexion = conectar_bd()
+    cursor = conexion.cursor(dictionary=True)
+
+    cursor.execute(
+        "SELECT id FROM usuario WHERE nombre_usuario='ceci'"
+    )
+
+    usuario = cursor.fetchone()
+
+    cursor.close()
+    conexion.close()
+
+    return render_template(
+        "index.html",
+        admin_id=usuario["id"],
+        nombre_admin="Ceci"
+    )
 # ==========================
 # AGREGAR PROVEEDOR
 # ==========================
@@ -171,7 +215,7 @@ def agregar_provider():
         descripcion = request.form.get("descripcion")
         id_admin = session["id_usuario"]
         
-        conexion.ping(reconnect=True)
+        conexion = conectar_bd()
         cursor = conexion.cursor()
         
         consulta = """
@@ -181,6 +225,7 @@ def agregar_provider():
         cursor.execute(consulta, (nombre, empresa, telefono, correo, descripcion, id_admin))
         conexion.commit()
         cursor.close()
+        conexion.close()
         
         return redirect(url_for("mis_proveedores")) # Redirige a la función /proveedores
         
@@ -194,7 +239,7 @@ def editar_proveedor(id):
     if "usuario" not in session:
         return redirect(url_for("login"))
         
-    conexion.ping(reconnect=True)
+    conexion = conectar_bd()
     cursor = conexion.cursor(dictionary=True)
     
     if request.method == "POST":
@@ -214,6 +259,7 @@ def editar_proveedor(id):
         cursor.execute(consulta, (nombre, empresa, telefono, correo, descripcion, id, session["id_usuario"]))
         conexion.commit()
         cursor.close()
+        conexion.close()
         return redirect(url_for("mis_proveedores"))
         
     # Si entramos por GET, buscamos los datos actuales para rellenar el formulario
@@ -235,13 +281,14 @@ def eliminar_proveedor(id):
     if "usuario" not in session:
         return redirect(url_for("login"))
         
-    conexion.ping(reconnect=True)
+    conexion = conectar_bd()
     cursor = conexion.cursor()
     
     # Eliminamos asegurándonos de que pertenezca al usuario logueado por seguridad
     cursor.execute("DELETE FROM proveedor WHERE id=%s AND id_usuario=%s", (id, session["id_usuario"]))
     conexion.commit()
     cursor.close()
+    conexion.close()
     
     return redirect(url_for("mis_proveedores"))
 
@@ -262,7 +309,7 @@ def cambiar_contrasena():
         confirmar = request.form.get("confirmar").strip()
         id_admin = session["id_usuario"]
         
-        conexion.ping(reconnect=True)
+        conexion = conectar_bd()
         cursor = conexion.cursor(dictionary=True)
         
         # 1. Verificar que la contraseña actual sea correcta
@@ -281,6 +328,7 @@ def cambiar_contrasena():
             exito = "¡Contraseña actualizada con éxito! "
             
         cursor.close()
+        conexion.close()
         
     return render_template("cambiar_contrasena.html", error=error, exito=exito)
 
