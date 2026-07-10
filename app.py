@@ -28,7 +28,9 @@ def inicio(nombre_admin="susana"):
     if nombre_admin.lower() not in ["susana", "ceci"]:
         return redirect(url_for("inicio"))
 
-    session["ruta_publica"] = nombre_admin.lower()
+    # Solo guarda la ruta si realmente es un administrador válido
+    if nombre_admin.lower() in ["susana", "ceci"]:
+        session["ruta_publica"] = nombre_admin.lower()
 
     conexion = conectar_bd()
     cursor = conexion.cursor(dictionary=True)
@@ -91,8 +93,10 @@ def buscar_api():
 @app.route("/login")
 def login():
 
-    admin = request.args.get("admin", "susana")
-
+    admin = request.args.get(
+        "admin",
+        session.get("ruta_publica", "susana")
+    )
 
     session["ruta_publica"] = admin.lower()
 
@@ -126,16 +130,15 @@ def validar_login():
 
     if datos:
 
-        session["id_usuario"] = datos["id"]
+     if datos["nombre_usuario"] != session.get("ruta_publica"):
+        return "Este usuario no corresponde a este acceso."
 
-        session["usuario"] = datos["nombre_usuario"]
+    session["id_usuario"] = datos["id"]
+    session["usuario"] = datos["nombre_usuario"]
 
+    return redirect(url_for("panel"))
+       
 
-        return redirect(url_for("panel"))
-
-    else:
-
-        return "Usuario o contraseña incorrectos."
 
 
 # ==========================
