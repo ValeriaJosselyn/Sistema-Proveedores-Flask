@@ -1,11 +1,11 @@
 {
     "name": "Sistema de Proveedores",
     "short_name": "Proveedores",
-    "start_url": ".",
-    "scope": ".",
+    "start_url": "/",
+    "scope": "/",
     "display": "standalone",
     "background_color": "#ffffff",
-    "theme_color": "#6c63ff",
+    "theme_color": "#9B59B6",
     "icons": [
         {
             "src": "/static/icono.png",
