@@ -12,13 +12,19 @@ href="{{ url_for('static', filename='css/login.css') }}">
 
 </head>
 
+
 <body>
+
 
 <div class="login">
 
+
 <h1>Iniciar Sesión</h1>
 
+
+
 <form action="/validar_login" method="POST">
+
 
 <input
 type="text"
@@ -26,11 +32,14 @@ name="usuario"
 placeholder="Usuario"
 required>
 
+
 <input
 type="password"
 name="contrasena"
 placeholder="Contraseña"
 required>
+
+
 
 <button>
 
@@ -38,9 +47,21 @@ Ingresar
 
 </button>
 
+
 </form>
 
+
+
+<a href="{{ url_for('restablecer_contrasena') }}" class="restablecer">
+
+Reestablecer contraseña
+
+</a>
+
+
+
 </div>
+
 
 </body>
 

@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Cambiar Contraseña</title>
+    <title>Restablecer Contraseña</title>
 
     <style>
         *{
@@ -35,7 +35,7 @@
 
         }
 
-        h2{
+        h1{
 
             color:#7B2CBF;
 
@@ -51,7 +51,7 @@
 
             text-align:center;
 
-            color:#777;
+            color:#7B2CBF;
 
             margin-bottom:30px;
 
@@ -220,7 +220,7 @@
 
     <div class="form-contenedor">
 
-        <h2>Cambiar Contraseña</h2>
+        <h1>Restablecer contraseña</h1>
 
         <p class="subtitulo">
             Actualiza tu contraseña de forma segura.
@@ -239,12 +239,10 @@
         {% endif %}
 
         <form method="POST">
-
-            <div class="campo">
-                <label>Contraseña Actual</label>
-                <input type="password" name="actual" required>
+             <div class="campo">
+                <label>Usuario</label>
+                <input type="text" name="usuario"  required>
             </div>
-
             <div class="campo">
                 <label>Nueva Contraseña</label>
                 <input type="password" name="nueva" required>
@@ -261,7 +259,7 @@
                     Actualizar
                 </button>
 
-                <a href="/panel" class="btn-cancelar">
+                <a href="/login" class="btn-cancelar">
                     Volver
                 </a>
 

@@ -2,171 +2,231 @@
 <html lang="es">
 
 <head>
-    <meta charset="UTF-8">
-    <title>Sistema de Proveedores</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
 
-    <link rel="manifest" href="/static/manifest.json">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Proveedores</title>
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+
+<link rel="manifest" href="/static/manifest.json">
+
+<style>
+
+body{
+
+    background:#F8F3FB;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+    font-family:Arial, sans-serif;
+
+}
+
+
+.contenedor{
+
+    background:white;
+    width:420px;
+    padding:45px;
+    border-radius:25px;
+    text-align:center;
+
+    box-shadow:
+    0 8px 25px rgba(155,89,182,.35);
+
+}
+
+
+h1{
+
+    color:#9B59B6;
+    font-size:48px;
+    margin-bottom:10px;
+
+}
+
+
+.subtitulo{
+
+    color:#777;
+    margin-bottom:35px;
+    font-size:18px;
+
+}
+
+
+.btn-consultar{
+
+    background:#9B59B6;
+    color:white;
+
+    padding:18px;
+
+    border-radius:30px;
+    border:none;
+
+    width:100%;
+
+    font-size:18px;
+    font-weight:bold;
+
+    cursor:pointer;
+
+    transition:.3s;
+
+}
+
+
+.btn-consultar:hover{
+
+    background:#8E44AD;
+
+    transform:scale(1.03);
+
+}
+
+
+
+.formulario{
+
+    display:none;
+    margin-top:25px;
+
+}
+
+
+input{
+
+    width:100%;
+
+    padding:14px;
+
+    border-radius:12px;
+
+    border:2px solid #E8DAEF;
+
+    margin-bottom:20px;
+
+    font-size:16px;
+
+}
+
+
+
+.entrar{
+
+    background:#8E44AD;
+
+    color:white;
+
+    border:none;
+
+    padding:14px;
+
+    width:100%;
+
+    border-radius:25px;
+
+    font-size:17px;
+
+    cursor:pointer;
+
+    transition:.3s;
+
+}
+
+
+.entrar:hover{
+
+    background:#6C3483;
+
+}
+
+
+
+</style>
+
 </head>
+
 
 <body>
 
-    <header class="encabezado">
-        <div class="titulo">
-            <h1>Sistema de Proveedores</h1>
-        </div>
 
-        <a href="{{ url_for('login', admin=nombre_admin.lower()) }}" class="btn-login">
-            Iniciar sesión
-        </a>
-        </div>
-    </header>
+<div class="contenedor">
 
-    <div class="contenedor">
 
-        <form method="GET" id="form-busqueda" onsubmit="event.preventDefault();">
+<h1>Bienvenidos</h1>
 
-            <input
-                type="text"
-                id="input-buscar"
-                name="buscar"
-                placeholder="🔍 Buscar proveedor por nombre o descripción..."
-                autocomplete="off">
 
-        </form>
+<p class="subtitulo">
 
-        <div id="contenedor-resultados"></div>
+Sistema de Proveedores
 
-    </div>
+</p>
+
+
+
+<button 
+class="btn-consultar" 
+onclick="mostrarFormulario()">
+
+ Consultar proveedores
+
+</button>
+
+
+
+
+<form 
+class="formulario"
+id="formulario"
+method="POST"
+action="{{ url_for('inicio') }}">
+
+
+<input
+
+type="text"
+
+name="usuario"
+
+placeholder="Usuario del administrador"
+
+required>
+
+
+
+<button class="entrar">
+
+Entrar
+
+</button>
+
+
+
+</form>
+
+
+
+</div>
+
+
 
 <script>
 
-const adminId = "{{ admin_id }}";
 
-const inputBuscar = document.getElementById("input-buscar");
-const contenedorResultados = document.getElementById("contenedor-resultados");
+function mostrarFormulario(){
 
-// ==============================
-// BUSCAR PROVEEDORES
-// ==============================
-async function buscarProveedores() {
-
-    const valor = inputBuscar.value.trim();
-
-    if (valor === "") {
-
-        contenedorResultados.innerHTML = "";
-        return;
-
-    }
-
-    try {
-
-        const respuesta = await fetch(`/buscar_api?buscar=${encodeURIComponent(valor)}&admin_id=${adminId}`);
-
-        const proveedores = await respuesta.json();
-
-        renderizarTarjetas(proveedores);
-
-    } catch (error) {
-
-        console.error("Error al buscar proveedores:", error);
-
-    }
+document.getElementById("formulario").style.display="block";
 
 }
 
-// ==============================
-// PINTAR TARJETAS
-// ==============================
-function renderizarTarjetas(proveedores) {
-
-    contenedorResultados.innerHTML = "";
-
-    if (proveedores.length === 0) {
-
-        contenedorResultados.innerHTML =
-            '<div class="mensaje">No se encontraron proveedores.</div>';
-
-        return;
-
-    }
-
-    proveedores.forEach(proveedor => {
-
-        const tarjeta = document.createElement("div");
-
-        tarjeta.className = "tarjeta";
-
-        tarjeta.innerHTML = `
-
-            <h2>👤 ${proveedor.nombre_proveedor}</h2>
-
-            <p><strong>Empresa:</strong> ${proveedor.nombre_empresa}</p>
-
-            <p><strong>Teléfono:</strong> ${proveedor.telefono}</p>
-
-            <p><strong>Correo:</strong> ${proveedor.correo}</p>
-
-            <p><strong>Descripción:</strong> ${proveedor.descripcion}</p>
-
-            <button class="btn-copiar"
-            onclick="copiarContacto('${proveedor.nombre_proveedor}','${proveedor.telefono}','${proveedor.correo}')">
-
-                Copiar contacto
-
-            </button>
-
-        `;
-
-        contenedorResultados.appendChild(tarjeta);
-
-    });
-
-}
-
-// ==============================
-// COPIAR CONTACTO
-// ==============================
-function copiarContacto(nombre, telefono, correo) {
-
-    const texto =
-`Nombre: ${nombre}
-Teléfono: ${telefono}
-Correo: ${correo}`;
-
-    navigator.clipboard.writeText(texto)
-    .then(() => {
-
-        alert("¡Contacto copiado al portapapeles!");
-
-    })
-    .catch(error => {
-
-        console.error(error);
-
-    });
-
-}
-
-// ==============================
-// BÚSQUEDA EN TIEMPO REAL
-// ==============================
-let tiempoBusqueda;
-
-inputBuscar.addEventListener("input", () => {
-
-    clearTimeout(tiempoBusqueda);
-
-    tiempoBusqueda = setTimeout(() => {
-
-        buscarProveedores();
-
-    }, 300);
-
-});
 
 </script>
+
 
 </body>
 

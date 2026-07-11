@@ -21,36 +21,56 @@ def conectar_bd():
 # ==========================
 # PÁGINA PRINCIPAL
 # ==========================
-@app.route("/")
-@app.route("/<nombre_admin>", methods=["GET"])
-def inicio(nombre_admin=None):
 
-    if nombre_admin is None:
-        nombre_admin = session.get("ruta_publica", "susana")
+@app.route("/", methods=["GET","POST"])
+def inicio():
 
-    if nombre_admin.lower() not in ["susana", "ceci"]:
-        return redirect(url_for("inicio"))
+    error = None
 
-    conexion = conectar_bd()
-    cursor = conexion.cursor(dictionary=True)
+    if request.method == "POST":
 
-    cursor.execute(
-        "SELECT id FROM usuario WHERE LOWER(nombre_usuario)=LOWER(%s)",
-        (nombre_admin.strip(),)
-)
+        nombre = request.form.get("usuario").lower().strip()
 
-    usuario = cursor.fetchone()
+        conexion = conectar_bd()
+        cursor = conexion.cursor(dictionary=True)
 
-    cursor.close()
-    conexion.close()
+        cursor.execute(
+            "SELECT * FROM usuario WHERE nombre_usuario=%s",
+            (nombre,)
+        )
 
-    id_coincidencia = usuario["id"] if usuario else 1
+        usuario = cursor.fetchone()
+
+        cursor.close()
+        conexion.close()
+
+
+        if usuario:
+
+            session["id_usuario"] = usuario["id"]
+
+            return redirect(url_for("buscar"))
+
+        else:
+
+            error = "Administrador no encontrado."
+
 
     return render_template(
         "index.html",
-        admin_id=id_coincidencia,
-        nombre_admin=nombre_admin.capitalize()
+        error=error
     )
+
+@app.route("/buscar")
+def buscar():
+
+    admin_id = session.get("id_usuario")
+
+    return render_template(
+        "buscar.html",
+        admin_id=admin_id
+    )
+
 
 @app.route("/favicon.ico")
 def favicon():
@@ -95,14 +115,7 @@ def buscar_api():
 @app.route("/login")
 def login():
 
-    admin = request.args.get(
-        "admin",
-        session.get("ruta_publica", "susana")
-    )
-
-    session["ruta_publica"] = admin.lower()
-
-    return render_template("login.html", admin=admin)
+    return render_template("login.html")
 # ==========================
 # VALIDAR LOGIN
 # ==========================
@@ -127,26 +140,19 @@ def validar_login():
 
     datos = cursor.fetchone()
 
-    print("USUARIO:", usuario)
-    print("CONTRASEÑA:", contrasena)
-    print("DATOS:", datos)
-    print("RUTA:", session.get("ruta_publica"))
-
 
     cursor.close()
     conexion.close()
-
     if datos:
-
-        if datos["nombre_usuario"].strip().lower() != session.get("ruta_publica").strip().lower():
-         return "Este usuario no corresponde a este acceso."
 
         session["id_usuario"] = datos["id"]
         session["usuario"] = datos["nombre_usuario"]
 
-    return redirect(url_for("panel"))
+        return redirect(url_for("panel"))
 
+    else:
 
+        return "Usuario o contraseña incorrectos"
 
 # ==========================
 # PANEL
@@ -281,42 +287,64 @@ def eliminar_proveedor(id):
 # ==========================
 # 🔐 CAMBIAR CONTRASEÑA
 # ==========================
-@app.route("/cambiar_contrasena", methods=["GET", "POST"])
-def cambiar_contrasena():
-    if "usuario" not in session:
-        return redirect(url_for("login"))
-        
+@app.route("/restablecer_contrasena", methods=["GET", "POST"])
+def restablecer_contrasena():
+
     error = None
     exito = None
-    
+
     if request.method == "POST":
-        actual = request.form.get("actual").strip()
+
+        usuario = request.form.get("usuario").strip()
         nueva = request.form.get("nueva").strip()
         confirmar = request.form.get("confirmar").strip()
-        id_admin = session["id_usuario"]
-        
-        conexion = conectar_bd()
-        cursor = conexion.cursor(dictionary=True)
-        
-        # 1. Verificar que la contraseña actual sea correcta
-        cursor.execute("SELECT contrasena FROM usuario WHERE id = %s", (id_admin,))
-        usuario = cursor.fetchone()
-        
-        if usuario["contrasena"] != actual:
-            error = "La contraseña actual es incorrecta "
-        # 2. Verificar que las dos contraseñas nuevas coincidan
-        elif nueva != confirmar:
-            error = "La nueva contraseña y la confirmación no coinciden "
-        # 3. Si todo está bien, actualizamos
+
+
+        if nueva != confirmar:
+
+            error = "Las contraseñas no coinciden."
+
         else:
-            cursor.execute("UPDATE usuario SET contrasena = %s WHERE id = %s", (nueva, id_admin))
-            conexion.commit()
-            exito = "¡Contraseña actualizada con éxito! "
-            
-        cursor.close()
-        conexion.close()
-        
-    return render_template("cambiar_contrasena.html", error=error, exito=exito)
+
+            conexion = conectar_bd()
+            cursor = conexion.cursor(dictionary=True)
+
+
+            cursor.execute(
+                "SELECT id FROM usuario WHERE nombre_usuario=%s",
+                (usuario,)
+            )
+
+            datos = cursor.fetchone()
+
+
+            if datos:
+
+                id_admin = datos["id"]
+
+                cursor.execute(
+                    "UPDATE usuario SET contrasena=%s WHERE id=%s",
+                    (nueva, id_admin)
+                )
+
+                conexion.commit()
+
+                exito = "Contraseña actualizada correctamente."
+
+            else:
+
+                error = "Usuario no encontrado."
+
+
+            cursor.close()
+            conexion.close()
+
+
+    return render_template(
+        "restablecer_contrasena.html",
+        error=error,
+        exito=exito
+    )
 
 
 # ==========================
@@ -325,14 +353,9 @@ def cambiar_contrasena():
 @app.route("/logout")
 def logout():
 
-    print("SESSION:", dict(session))
-
-    ruta = session.get("ruta_publica", "susana")
-
-
     session.clear()
 
-    return redirect(url_for("inicio", nombre_admin=ruta))
+    return redirect(url_for("inicio"))
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

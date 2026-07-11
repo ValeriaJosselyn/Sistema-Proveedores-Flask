@@ -142,3 +142,21 @@ button:hover{
     }
 
 }
+
+.restablecer{
+
+    display:block;
+    margin-top:20px;
+    text-decoration:none;
+    color:#9B59B6;
+    font-size:15px;
+
+}
+
+
+.restablecer:hover{
+
+    color:#8E44AD;
+    text-decoration:underline;
+
+}
