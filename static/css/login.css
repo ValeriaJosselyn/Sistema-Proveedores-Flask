@@ -110,3 +110,35 @@ button:hover{
     transform:scale(1.03);
 
 }
+
+/* ==========================
+   CELULARES
+========================== */
+
+@media (max-width: 768px){
+
+    .contenedor{
+        width:95%;
+        margin-top:20px;
+    }
+
+    input{
+        width:100%;
+        font-size:16px;
+    }
+
+    .tarjeta{
+        padding:15px;
+    }
+
+    h1{
+        font-size:28px;
+        text-align:center;
+    }
+
+    .subtitulo{
+        font-size:15px;
+        text-align:center;
+    }
+
+}

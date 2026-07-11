@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <title>Sistema de Proveedores</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+
+    <link rel="manifest" href="/static/manifest.json">
 </head>
 
 <body>
@@ -14,7 +16,7 @@
             <h1>Sistema de Proveedores</h1>
         </div>
 
-        <<a href="{{ url_for('login', admin=nombre_admin.lower()) }}" class="btn-login">
+        <a href="{{ url_for('login', admin=nombre_admin.lower()) }}" class="btn-login">
             Iniciar sesión
         </a>
         </div>

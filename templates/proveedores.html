@@ -245,6 +245,69 @@ tr:hover{
 
 }
 
+/*================ RESPONSIVE ================*/
+
+@media (max-width: 768px){
+
+    header{
+
+        flex-direction:column;
+        gap:15px;
+        text-align:center;
+        padding:20px;
+
+    }
+
+    header h2{
+
+        font-size:24px;
+
+    }
+
+    .contenedor{
+
+        width:95%;
+        padding:20px;
+        margin:20px auto;
+
+    }
+
+    .titulo-seccion{
+
+        flex-direction:column;
+        gap:15px;
+        text-align:center;
+
+    }
+
+    .titulo-seccion h3{
+
+        font-size:24px;
+
+    }
+
+    .btn-crear{
+
+        width:100%;
+        text-align:center;
+
+    }
+
+    /* Hace que la tabla se pueda deslizar */
+    .tabla-responsive{
+
+        overflow-x:auto;
+
+    }
+
+    table{
+
+        min-width:700px;
+
+    }
+
+}
+
 </style>
 
 </head>
@@ -274,6 +337,8 @@ tr:hover{
     </div>
 
     {% if proveedores %}
+
+    <div class="tabla-responsive">
 
     <table>
 
@@ -333,6 +398,8 @@ tr:hover{
                 </tbody>
 
     </table>
+
+    </div>
 
     {% else %}
 
