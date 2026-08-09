@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 import psycopg2
 from psycopg2.extras import RealDictCursor
-import config
+import os
 
 app = Flask(__name__)
 
@@ -13,11 +13,11 @@ app.secret_key = "sistema_proveedores_2026"
 
 def conectar_bd():
     return psycopg2.connect(
-        host=config.DB_HOST,
-        user=config.DB_USER,
-        password=config.DB_PASSWORD,
-        dbname=config.DB_NAME,
-        port=config.DB_PORT
+        host=os.getenv("DB_HOST"),
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASSWORD"),
+        dbname=os.getenv("DB_NAME"),
+        port=os.getenv("DB_PORT")
     )
 
 
