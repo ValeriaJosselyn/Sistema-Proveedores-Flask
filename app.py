@@ -433,6 +433,30 @@ def panel():
 
                 indicadores = dict(cursor.fetchone())
 
+                
+                # ==================================
+                # KPI 2: EMPRESAS REGISTRADAS
+                # ==================================
+
+                cursor.execute(f"""
+                    SELECT
+                        COUNT(
+                            DISTINCT LOWER(BTRIM(p.nombre_empresa))
+                        ) AS total_empresas
+
+                    FROM public.proveedor p
+
+                    WHERE {filtro_sql}
+                      AND NULLIF(
+                          BTRIM(p.nombre_empresa), ''
+                      ) IS NOT NULL
+                """, parametros)
+
+                total_empresas = int(
+                    cursor.fetchone()["total_empresas"]
+                )
+
+
                 # ==================================
                 # PROVEEDORES RECIENTES
                 # ==================================
@@ -742,6 +766,8 @@ def panel():
             nombres_categorias=nombres_categorias,
             cantidades_categorias=cantidades_categorias,
             total_categorias=total_categorias,
+
+            total_empresas=total_empresas,
 
             porcentaje_contacto=porcentaje_contacto,
 

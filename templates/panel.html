@@ -404,88 +404,112 @@
 
 
 
-            <!-- ==========================================
-                 TARJETAS DE INDICADORES
-            ========================================== -->
+            <
+<!-- ==========================================
+     TARJETAS DE INDICADORES - 8 KPI
+========================================== -->
 
-            <section class="tarjetas">
+<section class="tarjetas" id="indicadores-dashboard">
 
-                <article class="tarjeta morada">
+    <!-- KPI 1: TOTAL DE PROVEEDORES -->
+    <article class="tarjeta morada">
+        <div class="tarjeta-icono">♙</div>
+        <div>
+            <h3>Total de proveedores</h3>
+            <strong>
+                {{ total_proveedores | default(0) }}
+            </strong>
+            <p>Proveedores registrados</p>
+        </div>
+    </article>
 
-                    <div class="tarjeta-icono">♙</div>
+    <!-- KPI 2: EMPRESAS REGISTRADAS -->
+    <article class="tarjeta rosa">
+        <div class="tarjeta-icono">▦</div>
+        <div>
+            <h3>Empresas registradas</h3>
+            <strong>
+                {{ total_empresas | default(0) }}
+            </strong>
+            <p>Empresas diferentes en el directorio</p>
+        </div>
+    </article>
 
-                    <div>
-                        <h3>Proveedores</h3>
+    <!-- KPI 3: CATEGORÍAS UTILIZADAS -->
+    <article class="tarjeta verde">
+        <div class="tarjeta-icono">▤</div>
+        <div>
+            <h3>Categorías utilizadas</h3>
+            <strong>
+                {{ total_categorias | default(0) }}
+            </strong>
+            <p>Categorías con proveedores</p>
+        </div>
+    </article>
 
-                        <strong>
-                            {{ total_proveedores | default(0) }}
-                        </strong>
+    <!-- KPI 4: FACTURAS PENDIENTES -->
+    <article class="tarjeta naranja">
+        <div class="tarjeta-icono">▣</div>
+        <div>
+            <h3>Facturas pendientes</h3>
+            <strong>
+                {{ total_pagos_pendientes | default(0) }}
+            </strong>
+            <p>Total de facturas sin pagar</p>
+        </div>
+    </article>
 
-                        <p>Proveedores registrados</p>
-                    </div>
+    <!-- KPI 5: MONTO PENDIENTE -->
+    <article class="tarjeta morada">
+        <div class="tarjeta-icono">$</div>
+        <div>
+            <h3>Monto pendiente</h3>
+            <strong class="kpi-monto">
+                ${{ "{:,.2f}".format(
+                    monto_pendiente | default(0)
+                ) }}
+            </strong>
+            <p>MXN pendientes de pago</p>
+        </div>
+    </article>
 
-                </article>
+    <!-- KPI 6: FACTURAS PAGADAS -->
+    <article class="tarjeta verde">
+        <div class="tarjeta-icono">✓</div>
+        <div>
+            <h3>Facturas pagadas</h3>
+            <strong>
+                {{ estados_facturas.pagadas | default(0) }}
+            </strong>
+            <p>Facturas liquidadas</p>
+        </div>
+    </article>
 
+    <!-- KPI 7: FACTURAS PRÓXIMAS A VENCER -->
+    <article class="tarjeta naranja">
+        <div class="tarjeta-icono">◷</div>
+        <div>
+            <h3>Próximas a vencer</h3>
+            <strong>
+                {{ estados_facturas.proximas | default(0) }}
+            </strong>
+            <p>Vencen hoy o dentro de 7 días</p>
+        </div>
+    </article>
 
-                <article class="tarjeta rosa">
+    <!-- KPI 8: FACTURAS VENCIDAS -->
+    <article class="tarjeta rosa">
+        <div class="tarjeta-icono">!</div>
+        <div>
+            <h3>Facturas vencidas</h3>
+            <strong>
+                {{ estados_facturas.vencidas | default(0) }}
+            </strong>
+            <p>Facturas sin pagar fuera de plazo</p>
+        </div>
+    </article>
 
-                    <div class="tarjeta-icono">✉</div>
-
-                    <div>
-                        <h3>Contactos completos</h3>
-
-                        <strong>
-                            {{ porcentaje_contacto | default(0) }}%
-                        </strong>
-
-                        <p>
-                            {{ contacto_completo | default(0) }}
-                            proveedores con correo y teléfono
-                        </p>
-                    </div>
-
-                </article>
-
-
-                <article class="tarjeta verde">
-
-                    <div class="tarjeta-icono">▤</div>
-
-                    <div>
-                        <h3>Categorías</h3>
-
-                        <strong>
-                            {{ total_categorias | default(0) }}
-                        </strong>
-
-                        <p>Categorías utilizadas</p>
-                    </div>
-
-                </article>
-
-
-                <article class="tarjeta naranja">
-
-                    <div class="tarjeta-icono">▣</div>
-
-                    <div>
-                        <h3>Pagos pendientes</h3>
-
-                        <strong>
-                            {{ total_pagos_pendientes | default(0) }}
-                        </strong>
-
-                        <p>
-                            ${{ "{:,.2f}".format(
-                                monto_pendiente | default(0)
-                            ) }} MXN pendientes
-                        </p>
-                    </div>
-
-                </article>
-
-            </section>
-
+</section>
 
             <!-- ==========================================
                  GRÁFICAS CIRCULARES
