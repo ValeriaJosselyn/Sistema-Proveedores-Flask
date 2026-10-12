@@ -997,3 +997,53 @@ body {
         flex: 1;
     }
 }
+
+
+/* =========================================
+   DISTRIBUCIÓN DEL DASHBOARD
+========================================= */
+
+/* Dos gráficas circulares */
+.graficas#graficas {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+/* Dos gráficas lineales */
+#graficas-mensuales {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+/* Dos tablas */
+.tablas {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+/* Evitar que el contenido ensanche las cajas */
+.graficas .caja,
+.tablas .caja {
+    min-width: 0;
+}
+
+/* Permitir desplazamiento horizontal en tablas */
+.tabla-contenido {
+    width: 100%;
+    overflow-x: auto;
+}
+
+/* Adaptación a pantallas pequeñas */
+@media (max-width: 900px) {
+    .graficas#graficas,
+    #graficas-mensuales,
+    .tablas {
+        grid-template-columns: 1fr;
+    }
+}
