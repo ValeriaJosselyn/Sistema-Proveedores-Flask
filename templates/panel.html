@@ -192,7 +192,7 @@
                             {% else %}
 
                             <div class="notificaciones-vacias">
-                                <span>💜</span>
+                                <span></span>
                                 <p>¡Todo está al día!</p>
                                 <small>
                                     No hay facturas vencidas
@@ -259,6 +259,171 @@
                 </div>
 
             </section>
+
+
+            
+<!-- ==========================================
+     SEGMENTADORES DEL DASHBOARD
+========================================== -->
+
+<section class="filtros-dashboard">
+
+    <div class="filtros-encabezado">
+        <div>
+            <h2>⚙ Filtros del dashboard</h2>
+            <p>
+                Personaliza la información que deseas analizar.
+                Los indicadores y gráficas se actualizarán
+                con los filtros seleccionados.
+            </p>
+        </div>
+    </div>
+
+    <form
+        action="{{ url_for('panel') }}"
+        method="GET"
+        class="filtros-formulario"
+        id="formFiltrosDashboard"
+    >
+
+        <!-- PERIODO -->
+        <div class="filtro-grupo">
+            <label for="filtroPeriodo">Periodo</label>
+
+            <select
+                name="periodo"
+                id="filtroPeriodo"
+            >
+                <option
+                    value="todos"
+                    {% if periodo_seleccionado == 'todos' %}
+                    selected
+                    {% endif %}
+                >
+                    Todos los años
+                </option>
+
+                {% for anio in anios_disponibles %}
+                <option
+                    value="{{ anio }}"
+                    {% if periodo_seleccionado == anio|string %}
+                    selected
+                    {% endif %}
+                >
+                    {{ anio }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- CATEGORÍA -->
+        <div class="filtro-grupo">
+            <label for="filtroCategoria">Categoría</label>
+
+            <select
+                name="categoria"
+                id="filtroCategoria"
+            >
+                <option
+                    value="todas"
+                    {% if categoria_seleccionada == 'todas' %}
+                    selected
+                    {% endif %}
+                >
+                    Todas las categorías
+                </option>
+
+                {% for categoria in categorias_disponibles %}
+                <option
+                    value="{{ categoria.id }}"
+                    {% if categoria_seleccionada == categoria.id|string %}
+                    selected
+                    {% endif %}
+                >
+                    {{ categoria.nombre }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- CONTACTO -->
+        <div class="filtro-grupo">
+            <label for="filtroContacto">Estado de contacto</label>
+
+            <select
+                name="contacto"
+                id="filtroContacto"
+            >
+                <option
+                    value="todos"
+                    {% if contacto_seleccionado == 'todos' %}
+                    selected
+                    {% endif %}
+                >
+                    Todos los contactos
+                </option>
+
+                <option
+                    value="completo"
+                    {% if contacto_seleccionado == 'completo' %}
+                    selected
+                    {% endif %}
+                >
+                    Contacto completo
+                </option>
+
+                <option
+                    value="parcial"
+                    {% if contacto_seleccionado == 'parcial' %}
+                    selected
+                    {% endif %}
+                >
+                    Contacto parcial
+                </option>
+
+                <option
+                    value="sin"
+                    {% if contacto_seleccionado == 'sin' %}
+                    selected
+                    {% endif %}
+                >
+                    Sin contacto
+                </option>
+            </select>
+        </div>
+
+        <div class="filtros-botones">
+            <button
+                type="submit"
+                class="btn-aplicar-filtros"
+            >
+                Aplicar filtros
+            </button>
+
+            <a
+                href="{{ url_for('panel') }}"
+                class="btn-limpiar-filtros"
+            >
+                Limpiar
+            </a>
+        </div>
+
+    </form>
+
+    <p class="filtros-nota">
+        {% if periodo_seleccionado == 'todos' %}
+            Las tarjetas muestran todos los periodos.
+            Las gráficas mensuales corresponden a {{ anio_graficas }}.
+        {% else %}
+            Las tarjetas y gráficas se encuentran filtradas
+            por el año {{ periodo_seleccionado }}.
+        {% endif %}
+        Las notificaciones de vencimiento permanecen visibles
+        independientemente de los filtros.
+    </p>
+
+</section>
+
 
 
             <!-- ==========================================
@@ -440,7 +605,7 @@
 
                     <p class="subtitulo-grafica">
                         Evolución mensual de los proveedores
-                        agregados durante {{ hoy.year }}.
+                        agregados durante {{ anio_graficas }}.
                     </p>
 
                     <div class="grafica-mensual">

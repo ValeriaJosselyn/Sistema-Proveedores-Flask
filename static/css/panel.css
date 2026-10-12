@@ -845,3 +845,155 @@ body {
         height: 40px;
     }
 }
+
+/* ========================================
+   SEGMENTADORES DEL DASHBOARD
+======================================== */
+
+.filtros-dashboard {
+    background: white;
+    border: 1px solid #eee7f7;
+    border-radius: 14px;
+    padding: 24px;
+    margin-bottom: 22px;
+    box-shadow: 0 3px 12px rgba(100, 70, 150, 0.04);
+}
+
+.filtros-encabezado {
+    margin-bottom: 20px;
+}
+
+.filtros-encabezado h2 {
+    font-size: 16px;
+    margin: 0 0 8px;
+    color: #373c70;
+}
+
+.filtros-encabezado p {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.6;
+    color: #8583a4;
+}
+
+.filtros-formulario {
+    display: grid;
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr)) auto;
+    align-items: end;
+    gap: 15px;
+}
+
+.filtro-grupo {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    min-width: 0;
+}
+
+.filtro-grupo label {
+    color: #51438e;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.filtro-grupo select {
+    width: 100%;
+    min-height: 44px;
+    padding: 11px 13px;
+    background: #fcfaff;
+    border: 1px solid #e5d8f6;
+    border-radius: 9px;
+    color: #373c70;
+    font-family: inherit;
+    font-size: 13px;
+    outline: none;
+    cursor: pointer;
+}
+
+.filtro-grupo select:focus {
+    border-color: #a780f5;
+    box-shadow: 0 0 0 3px rgba(167, 128, 245, 0.12);
+}
+
+.filtros-botones {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-aplicar-filtros,
+.btn-limpiar-filtros {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 15px;
+    border-radius: 9px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: bold;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.btn-aplicar-filtros {
+    background: #a780f5;
+    border: 1px solid #a780f5;
+    color: white;
+}
+
+.btn-aplicar-filtros:hover {
+    background: #9168e6;
+}
+
+.btn-limpiar-filtros {
+    background: #f5edff;
+    border: 1px solid #e5d8f6;
+    color: #7955c6;
+}
+
+.btn-limpiar-filtros:hover {
+    background: #eadcff;
+}
+
+.filtros-nota {
+    margin: 17px 0 0;
+    font-size: 11px;
+    line-height: 1.6;
+    color: #8583a4;
+}
+
+/* TABLET */
+
+@media (max-width: 1150px) {
+    .filtros-formulario {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .filtros-botones {
+        align-self: end;
+    }
+}
+
+/* CELULAR */
+
+@media (max-width: 650px) {
+    .filtros-dashboard {
+        padding: 18px;
+    }
+
+    .filtros-formulario {
+        grid-template-columns: 1fr;
+    }
+
+    .filtros-botones {
+        flex-wrap: wrap;
+    }
+
+    .btn-aplicar-filtros,
+    .btn-limpiar-filtros {
+        flex: 1;
+    }
+}
