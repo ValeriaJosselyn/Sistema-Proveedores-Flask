@@ -1,173 +1,119 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, session
+
+from flask import (
+    Flask,
+    render_template,
+    request,
+    jsonify,
+    redirect,
+    url_for,
+    session
+)
+
+import os
+import secrets
+from decimal import Decimal, InvalidOperation
+from datetime import date, timedelta
+from functools import wraps
+
 import psycopg2
 from psycopg2.extras import RealDictCursor
-import os
+from dotenv import load_dotenv
+from werkzeug.security import (
+    check_password_hash,
+    generate_password_hash
+)
+
+
+# ==========================================
+# CONFIGURACIÓN GENERAL
+# ==========================================
+
+load_dotenv()
 
 app = Flask(__name__)
 
-# Clave para manejar sesiones
-app.secret_key = "sistema_proveedores_2026"
-# ==========================
+app.secret_key = os.getenv("SECRET_KEY")
+
+if not app.secret_key:
+    raise RuntimeError(
+        "Configura SECRET_KEY en tu archivo .env"
+    )
+
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=os.getenv(
+        "SESSION_COOKIE_SECURE", "false"
+    ).lower() == "true"
+)
+
+
+# ==========================================
 # CONEXIÓN A SUPABASE
-# ==========================
+# ==========================================
 
 def conectar_bd():
     return psycopg2.connect(
         host=os.getenv("DB_HOST"),
         user=os.getenv("DB_USER"),
         password=os.getenv("DB_PASSWORD"),
-        dbname=os.getenv("DB_NAME"),
-        port=os.getenv("DB_PORT")
+        dbname=os.getenv("DB_NAME", "postgres"),
+        port=os.getenv("DB_PORT", "5432"),
+        connect_timeout=10,
+        sslmode="require"
     )
 
 
-# ==========================
-# PÁGINA PRINCIPAL
-# ==========================
+# ==========================================
+# PROTECCIÓN DE RUTAS
+# ==========================================
 
-@app.route("/", methods=["GET", "POST"])
+def login_requerido(funcion):
+
+    @wraps(funcion)
+    def decorador(*args, **kwargs):
+
+        if not session.get("admin_autenticado"):
+            return redirect(url_for("login"))
+
+        if not session.get("id_usuario"):
+            session.clear()
+            return redirect(url_for("login"))
+
+        return funcion(*args, **kwargs)
+
+    return decorador
+
+
+# ==========================================
+# PÁGINA PRINCIPAL
+# ==========================================
+
+@app.route("/")
 def inicio():
 
-    error = None
+    if session.get("admin_autenticado"):
+        return redirect(url_for("panel"))
 
-    if request.method == "POST":
-
-        nombre = request.form.get("usuario", "").lower().strip()
-
-        try:
-            conexion = conectar_bd()
-            cursor = conexion.cursor(cursor_factory=RealDictCursor)
-
-            cursor.execute(
-                """
-                SELECT *
-                FROM usuario
-                WHERE LOWER(nombre_usuario) = LOWER(%s)
-                """,
-                (nombre,)
-            )
-
-            usuario = cursor.fetchone()
-
-            cursor.close()
-            conexion.close()
-
-            if usuario:
-
-                session["id_usuario"] = usuario["id"]
-                session["usuario"] = usuario["nombre_usuario"]
-
-                return redirect(url_for("buscar"))
-
-            else:
-
-                error = "Administrador no encontrado."
-
-        except psycopg2.Error as e:
-
-            print("Error al consultar usuario:", e)
-            error = "No se pudo conectar con la base de datos."
-
-    return render_template(
-        "index.html",
-        error=error
-    )
+    return redirect(url_for("login"))
 
 
-# ==========================
-# BUSCADOR
-# ==========================
-
-@app.route("/buscar")
-def buscar():
-
-    admin_id = session.get("id_usuario")
-
-    if not admin_id:
-        return redirect(url_for("inicio"))
-
-    return render_template(
-        "buscar.html",
-        admin_id=admin_id
-    )
-
-
-# ==========================
-# API DEL BUSCADOR
-# ==========================
-
-@app.route("/buscar_api", methods=["GET"])
-def buscar_api():
-
-    proveedores = []
-
-    busqueda = request.args.get("buscar", "").strip()
-    admin_id = request.args.get("admin_id")
-
-    if not admin_id:
-        return jsonify([])
-
-    try:
-
-        conexion = conectar_bd()
-        cursor = conexion.cursor(cursor_factory=RealDictCursor)
-
-        if busqueda:
-
-            consulta = """
-                SELECT *
-                FROM proveedor
-                WHERE (
-                    nombre_proveedor ILIKE %s
-                    OR nombre_empresa ILIKE %s
-                    OR descripcion ILIKE %s
-                    OR telefono ILIKE %s
-                    OR correo ILIKE %s
-                )
-                AND id_usuario = %s
-            """
-
-            dato = f"%{busqueda}%"
-
-            cursor.execute(
-                consulta,
-                (
-                    dato,
-                    dato,
-                    dato,
-                    dato,
-                    dato,
-                    admin_id
-                )
-            )
-
-            proveedores = cursor.fetchall()
-
-        cursor.close()
-        conexion.close()
-
-    except psycopg2.Error as e:
-
-        print("Error en buscar_api:", e)
-
-        return jsonify([])
-
-    return jsonify(proveedores)
-
-
-# ==========================
+# ==========================================
 # LOGIN
-# ==========================
+# ==========================================
 
 @app.route("/login")
 def login():
 
+    if session.get("admin_autenticado"):
+        return redirect(url_for("panel"))
+
     return render_template("login.html")
 
 
-# ==========================
+# ==========================================
 # VALIDAR LOGIN
-# ==========================
+# ==========================================
 
 @app.route("/validar_login", methods=["POST"])
 def validar_login():
@@ -175,325 +121,806 @@ def validar_login():
     usuario = request.form.get("usuario", "").strip()
     contrasena = request.form.get("contrasena", "")
 
+    if not usuario or not contrasena:
+        return "Ingresa usuario y contraseña.", 400
+
     try:
+        with conectar_bd() as conexion:
+            with conexion.cursor(
+                cursor_factory=RealDictCursor
+            ) as cursor:
 
-        conexion = conectar_bd()
-        cursor = conexion.cursor(cursor_factory=RealDictCursor)
+                cursor.execute("""
+                    SELECT id, nombre_usuario, contrasena
+                    FROM public.usuario
+                    WHERE LOWER(nombre_usuario) = LOWER(%s)
+                """, (usuario,))
 
-        sql = """
-            SELECT *
-            FROM usuario
-            WHERE LOWER(nombre_usuario) = LOWER(%s)
-            AND contrasena = %s
-        """
+                datos = cursor.fetchone()
 
-        cursor.execute(
-            sql,
-            (
-                usuario,
-                contrasena
-            )
-        )
-
-        datos = cursor.fetchone()
-
-        cursor.close()
-        conexion.close()
+        acceso_valido = False
 
         if datos:
 
+            almacenada = datos["contrasena"]
+
+            if almacenada.startswith(("scrypt:", "pbkdf2:")):
+                acceso_valido = check_password_hash(
+                    almacenada,
+                    contrasena
+                )
+            else:
+                acceso_valido = almacenada == contrasena
+
+        if acceso_valido:
+
+            session.clear()
+
             session["id_usuario"] = datos["id"]
             session["usuario"] = datos["nombre_usuario"]
+            session["admin_autenticado"] = True
 
             return redirect(url_for("panel"))
 
-        else:
-
-            return "Usuario o contraseña incorrectos"
+        return "Usuario o contraseña incorrectos.", 401
 
     except psycopg2.Error as e:
-
         print("Error en login:", e)
+        return "Error al conectar con la base de datos.", 500
 
-        return "Error al conectar con la base de datos."
 
-
-# ==========================
-# PANEL
-# ==========================
+# ==========================================
+# PANEL PRINCIPAL
+# ==========================================
 
 @app.route("/panel")
+@login_requerido
 def panel():
-
-    if "usuario" not in session:
-
-        return redirect(url_for("login"))
-
-    print(session)
-
-    return render_template(
-        "panel.html",
-        usuario=session["usuario"]
-    )
-
-
-# ==========================
-# MIS PROVEEDORES
-# ==========================
-
-@app.route("/proveedores")
-def mis_proveedores():
-
-    if "usuario" not in session:
-
-        return redirect(url_for("login"))
 
     id_admin = session["id_usuario"]
 
     try:
+        with conectar_bd() as conexion:
+            with conexion.cursor(
+                cursor_factory=RealDictCursor
+            ) as cursor:
 
-        conexion = conectar_bd()
-        cursor = conexion.cursor(cursor_factory=RealDictCursor)
+                # INDICADORES DE PROVEEDORES
 
-        # Mostramos únicamente los proveedores
-        # pertenecientes al administrador actual
+                cursor.execute("""
+                    SELECT
+                        COUNT(*) AS total_proveedores,
 
-        cursor.execute(
-            """
-            SELECT *
-            FROM proveedor
-            WHERE id_usuario = %s
-            """,
-            (id_admin,)
+                        COUNT(*) FILTER (
+                            WHERE NULLIF(TRIM(correo), '') IS NOT NULL
+                        ) AS con_correo,
+
+                        COUNT(*) FILTER (
+                            WHERE NULLIF(TRIM(telefono), '') IS NOT NULL
+                        ) AS con_telefono,
+
+                        COUNT(*) FILTER (
+                            WHERE NULLIF(TRIM(correo), '') IS NOT NULL
+                              AND NULLIF(TRIM(telefono), '') IS NOT NULL
+                        ) AS contacto_completo,
+
+                        COUNT(*) FILTER (
+                            WHERE
+                                (NULLIF(TRIM(correo), '') IS NOT NULL)
+                                <>
+                                (NULLIF(TRIM(telefono), '') IS NOT NULL)
+                        ) AS contacto_parcial,
+
+                        COUNT(*) FILTER (
+                            WHERE NULLIF(TRIM(correo), '') IS NULL
+                              AND NULLIF(TRIM(telefono), '') IS NULL
+                        ) AS sin_contacto
+
+                    FROM public.proveedor
+                    WHERE id_usuario = %s
+                """, (id_admin,))
+
+                indicadores = dict(cursor.fetchone())
+
+                # PROVEEDORES RECIENTES
+
+                cursor.execute("""
+                    SELECT
+                        id,
+                        nombre_proveedor,
+                        nombre_empresa,
+                        descripcion,
+                        correo,
+                        telefono
+                    FROM public.proveedor
+                    WHERE id_usuario = %s
+                    ORDER BY id DESC
+                    LIMIT 5
+                """, (id_admin,))
+
+                proveedores_recientes = cursor.fetchall()
+
+                # PROVEEDORES POR CATEGORÍA
+
+                cursor.execute("""
+                    SELECT
+                        c.nombre AS categoria,
+                        COUNT(DISTINCT p.id) AS total
+                    FROM public.categorias c
+                    INNER JOIN public.proveedor_categoria pc
+                        ON pc.id_categoria = c.id
+                    INNER JOIN public.proveedor p
+                        ON p.id = pc.id_proveedor
+                    WHERE p.id_usuario = %s
+                    GROUP BY c.id, c.nombre
+                    ORDER BY total DESC, c.nombre ASC
+                """, (id_admin,))
+
+                resultados_categorias = cursor.fetchall()
+
+                # INDICADORES DE PAGOS PENDIENTES
+
+                cursor.execute("""
+                    SELECT
+                        COUNT(*) AS total_pagos_pendientes,
+                        COALESCE(SUM(r.monto), 0) AS monto_pendiente
+                    FROM public.recordatorios_pago r
+                    INNER JOIN public.proveedor p
+                        ON p.id = r.id_proveedor
+                    WHERE p.id_usuario = %s
+                      AND r.pagado = FALSE
+                """, (id_admin,))
+
+                indicadores_pagos = dict(cursor.fetchone())
+
+                # FACTURAS PENDIENTES PARA LA TABLA
+
+                cursor.execute("""
+                    SELECT
+                        r.id,
+                        r.numero_factura,
+                        r.monto,
+                        r.fecha_vencimiento,
+                        p.nombre_proveedor
+                    FROM public.recordatorios_pago r
+                    INNER JOIN public.proveedor p
+                        ON p.id = r.id_proveedor
+                    WHERE p.id_usuario = %s
+                      AND r.pagado = FALSE
+                    ORDER BY r.fecha_vencimiento ASC, r.id ASC
+                    LIMIT 5
+                """, (id_admin,))
+
+                pagos_proximos = cursor.fetchall()
+
+                # NOTIFICACIONES DE FACTURAS
+
+                cursor.execute("""
+                    SELECT
+                        r.id,
+                        r.numero_factura,
+                        r.monto,
+                        r.fecha_vencimiento,
+                        p.nombre_proveedor
+                    FROM public.recordatorios_pago r
+                    INNER JOIN public.proveedor p
+                        ON p.id = r.id_proveedor
+                    WHERE p.id_usuario = %s
+                      AND r.pagado = FALSE
+                      AND r.fecha_vencimiento
+                          <= CURRENT_DATE + INTERVAL '7 days'
+                    ORDER BY r.fecha_vencimiento ASC, r.id ASC
+                """, (id_admin,))
+
+                notificaciones_pago = cursor.fetchall()
+
+                # ==========================================
+                # GRÁFICA: PROVEEDORES REGISTRADOS POR MES
+                # ==========================================
+
+                cursor.execute("""
+                    SELECT
+                        EXTRACT(MONTH FROM fecha_registro)::int AS mes,
+                        COUNT(*)::int AS total
+                    FROM public.proveedor
+                    WHERE id_usuario = %s
+                      AND fecha_registro >= DATE_TRUNC(
+                          'year', CURRENT_DATE
+                      )
+                      AND fecha_registro < DATE_TRUNC(
+                          'year', CURRENT_DATE
+                      ) + INTERVAL '1 year'
+                    GROUP BY mes
+                    ORDER BY mes
+                """, (id_admin,))
+
+                registros_mensuales = cursor.fetchall()
+
+                # ==========================================
+                # GRÁFICA: PAGOS REALIZADOS POR MES
+                # ==========================================
+
+                cursor.execute("""
+                    SELECT
+                        EXTRACT(MONTH FROM r.fecha_pago)::int AS mes,
+                        COALESCE(SUM(r.monto), 0) AS total
+                    FROM public.recordatorios_pago r
+                    INNER JOIN public.proveedor p
+                        ON p.id = r.id_proveedor
+                    WHERE p.id_usuario = %s
+                      AND r.pagado = TRUE
+                      AND r.fecha_pago IS NOT NULL
+                      AND r.fecha_pago >= DATE_TRUNC(
+                          'year', CURRENT_DATE
+                      )
+                      AND r.fecha_pago < DATE_TRUNC(
+                          'year', CURRENT_DATE
+                      ) + INTERVAL '1 year'
+                    GROUP BY mes
+                    ORDER BY mes
+                """, (id_admin,))
+
+                pagos_mensuales = cursor.fetchall()
+
+        # ==========================================
+        # PREPARAR DATOS PARA CHART.JS
+        # ==========================================
+
+        nombres_categorias = [
+            fila["categoria"]
+            for fila in resultados_categorias
+        ]
+
+        cantidades_categorias = [
+            int(fila["total"])
+            for fila in resultados_categorias
+        ]
+
+        total_categorias = len(nombres_categorias)
+
+        total = indicadores["total_proveedores"]
+
+        porcentaje_contacto = (
+            round(
+                indicadores["contacto_completo"] / total * 100,
+                1
+            )
+            if total > 0
+            else 0
         )
 
-        mis_provs = cursor.fetchall()
+        # Inicializar los doce meses en cero
 
-        cursor.close()
-        conexion.close()
+        proveedores_por_mes = [0] * 12
+        pagos_por_mes = [0.0] * 12
+
+        for fila in registros_mensuales:
+            mes = fila["mes"]
+            proveedores_por_mes[mes - 1] = int(fila["total"])
+
+        for fila in pagos_mensuales:
+            mes = fila["mes"]
+            pagos_por_mes[mes - 1] = float(fila["total"])
+
+        # ESTADOS DE FACTURAS
+
+        hoy = date.today()
+        limite_proximo = hoy + timedelta(days=7)
+
+        for pago in pagos_proximos:
+
+            if pago["fecha_vencimiento"] < hoy:
+                pago["estado"] = "Vencido"
+
+            elif pago["fecha_vencimiento"] <= limite_proximo:
+                pago["estado"] = "Próximo a vencer"
+
+            else:
+                pago["estado"] = "Pendiente"
+
+        # ENVIAR DATOS AL DASHBOARD
+
+        return render_template(
+            "panel.html",
+            usuario=session["usuario"],
+
+            proveedores_recientes=proveedores_recientes,
+
+            nombres_categorias=nombres_categorias,
+            cantidades_categorias=cantidades_categorias,
+            total_categorias=total_categorias,
+
+            porcentaje_contacto=porcentaje_contacto,
+
+            proveedores_por_mes=proveedores_por_mes,
+            pagos_por_mes=pagos_por_mes,
+
+            pagos_proximos=pagos_proximos,
+
+            notificaciones_pago=notificaciones_pago,
+            total_notificaciones=len(notificaciones_pago),
+
+            hoy=hoy,
+            limite_proximo=limite_proximo,
+
+            **indicadores,
+            **indicadores_pagos
+        )
+
+    except psycopg2.Error as e:
+        print("Error al cargar el panel:", e)
+        return "Error al cargar el panel.", 500
+# ==========================================
+# MIS PROVEEDORES
+# FUNCIÓN QUE FALTABA
+# ==========================================
+
+@app.route("/proveedores")
+@login_requerido
+def mis_proveedores():
+
+    id_admin = session["id_usuario"]
+
+    busqueda = request.args.get("buscar", "").strip()
+
+    try:
+        with conectar_bd() as conexion:
+            with conexion.cursor(
+                cursor_factory=RealDictCursor
+            ) as cursor:
+
+                if busqueda:
+
+                    dato = f"%{busqueda}%"
+
+                    cursor.execute("""
+                        SELECT *
+                        FROM public.proveedor
+
+                        WHERE id_usuario = %s
+                          AND (
+                              nombre_proveedor ILIKE %s
+                              OR nombre_empresa ILIKE %s
+                              OR descripcion ILIKE %s
+                              OR telefono ILIKE %s
+                              OR correo ILIKE %s
+                          )
+
+                        ORDER BY nombre_proveedor ASC
+                    """, (
+                        id_admin,
+                        dato,
+                        dato,
+                        dato,
+                        dato,
+                        dato
+                    ))
+
+                else:
+
+                    cursor.execute("""
+                        SELECT *
+                        FROM public.proveedor
+                        WHERE id_usuario = %s
+                        ORDER BY nombre_proveedor ASC
+                    """, (id_admin,))
+
+                proveedores = cursor.fetchall()
 
         return render_template(
             "proveedores.html",
-            proveedores=mis_provs,
+            proveedores=proveedores,
             usuario=session["usuario"]
         )
 
     except psycopg2.Error as e:
-
         print("Error al consultar proveedores:", e)
 
-        return "Error al consultar los proveedores."
-
-
-# ==========================
-# AGREGAR PROVEEDOR
-# ==========================
-
-@app.route("/agregar", methods=["GET", "POST"])
-def agregar_provider():
-
-    if "usuario" not in session:
-
-        return redirect(url_for("login"))
-
-    if request.method == "POST":
-
-        nombre = request.form.get("nombre")
-        empresa = request.form.get("empresa")
-        telefono = request.form.get("telefono")
-        correo = request.form.get("correo")
-        descripcion = request.form.get("descripcion")
-
-        id_admin = session["id_usuario"]
-
-        try:
-
-            conexion = conectar_bd()
-            cursor = conexion.cursor()
-
-            consulta = """
-                INSERT INTO proveedor
-                (
-                    nombre_proveedor,
-                    nombre_empresa,
-                    telefono,
-                    correo,
-                    descripcion,
-                    id_usuario
-                )
-                VALUES (%s, %s, %s, %s, %s, %s)
-            """
-
-            cursor.execute(
-                consulta,
-                (
-                    nombre,
-                    empresa,
-                    telefono,
-                    correo,
-                    descripcion,
-                    id_admin
-                )
-            )
-
-            conexion.commit()
-
-            cursor.close()
-            conexion.close()
-
-            return redirect(url_for("mis_proveedores"))
-
-        except psycopg2.Error as e:
-
-            print("Error al agregar proveedor:", e)
-
-            return "Error al agregar el proveedor."
-
-    return render_template("agregar.html")
-
-
-# ==========================
-# EDITAR PROVEEDOR
-# ==========================
-
-@app.route("/editar/<int:id>", methods=["GET", "POST"])
-def editar_proveedor(id):
-
-    if "usuario" not in session:
-
-        return redirect(url_for("login"))
-
-    try:
-
-        conexion = conectar_bd()
-        cursor = conexion.cursor(cursor_factory=RealDictCursor)
-
-        if request.method == "POST":
-
-            nombre = request.form.get("nombre")
-            empresa = request.form.get("empresa")
-            telefono = request.form.get("telefono")
-            correo = request.form.get("correo")
-            descripcion = request.form.get("descripcion")
-
-            consulta = """
-                UPDATE proveedor
-                SET
-                    nombre_proveedor = %s,
-                    nombre_empresa = %s,
-                    telefono = %s,
-                    correo = %s,
-                    descripcion = %s
-                WHERE id = %s
-                AND id_usuario = %s
-            """
-
-            cursor.execute(
-                consulta,
-                (
-                    nombre,
-                    empresa,
-                    telefono,
-                    correo,
-                    descripcion,
-                    id,
-                    session["id_usuario"]
-                )
-            )
-
-            conexion.commit()
-
-            cursor.close()
-            conexion.close()
-
-            return redirect(url_for("mis_proveedores"))
-
-        # Buscar proveedor actual
-
-        cursor.execute(
-            """
-            SELECT *
-            FROM proveedor
-            WHERE id = %s
-            AND id_usuario = %s
-            """,
-            (
-                id,
-                session["id_usuario"]
-            )
+        return (
+            "No se pudieron consultar los proveedores.",
+            500
         )
 
-        proveedor = cursor.fetchone()
 
-        cursor.close()
-        conexion.close()
+# ==========================================
+# BUSCADOR INTERNO
+# ==========================================
 
-        if not proveedor:
+@app.route("/buscar")
+@login_requerido
+def buscar():
 
-            return "Proveedor no encontrado o no tienes permisos.", 404
+    return redirect(url_for("mis_proveedores"))
+
+
+# ==========================================
+# API DEL BUSCADOR
+# ==========================================
+
+@app.route("/buscar_api")
+@login_requerido
+def buscar_api():
+
+    busqueda = request.args.get("buscar", "").strip()
+    id_admin = session["id_usuario"]
+
+    try:
+        with conectar_bd() as conexion:
+            with conexion.cursor(
+                cursor_factory=RealDictCursor
+            ) as cursor:
+
+                if busqueda:
+
+                    dato = f"%{busqueda}%"
+
+                    cursor.execute("""
+                        SELECT *
+                        FROM public.proveedor
+
+                        WHERE id_usuario = %s
+                          AND (
+                              nombre_proveedor ILIKE %s
+                              OR nombre_empresa ILIKE %s
+                              OR descripcion ILIKE %s
+                              OR telefono ILIKE %s
+                              OR correo ILIKE %s
+                          )
+
+                        ORDER BY nombre_proveedor
+                    """, (
+                        id_admin,
+                        dato,
+                        dato,
+                        dato,
+                        dato,
+                        dato
+                    ))
+
+                else:
+
+                    cursor.execute("""
+                        SELECT *
+                        FROM public.proveedor
+                        WHERE id_usuario = %s
+                        ORDER BY nombre_proveedor
+                    """, (id_admin,))
+
+                proveedores = cursor.fetchall()
+
+        return jsonify(proveedores)
+
+    except psycopg2.Error as e:
+        print("Error en buscador:", e)
+
+        return jsonify({
+            "error": "No se pudieron consultar los proveedores."
+        }), 500
+    
+
+# ==========================================
+# PÁGINA PARA BUSCAR PROVEEDORES
+# ==========================================
+
+@app.route("/buscar-proveedores")
+@login_requerido
+def buscar_proveedores():
+    return render_template(
+        "buscar.html",
+        usuario=session["usuario"]
+    )
+
+# ==========================================
+# AGREGAR PROVEEDOR CON CATEGORÍAS
+# ==========================================
+
+@app.route("/agregar", methods=["GET", "POST"])
+@login_requerido
+def agregar_provider():
+
+    id_admin = session["id_usuario"]
+
+    try:
+        with conectar_bd() as conexion:
+            with conexion.cursor(
+                cursor_factory=RealDictCursor
+            ) as cursor:
+
+                cursor.execute("""
+                    SELECT id, nombre
+                    FROM public.categorias
+                    ORDER BY nombre ASC
+                """)
+
+                categorias = cursor.fetchall()
+
+                if request.method == "POST":
+
+                    nombre = request.form.get(
+                        "nombre", ""
+                    ).strip()
+
+                    empresa = request.form.get(
+                        "empresa", ""
+                    ).strip()
+
+                    telefono = request.form.get(
+                        "telefono", ""
+                    ).strip()
+
+                    correo = request.form.get(
+                        "correo", ""
+                    ).strip()
+
+                    descripcion = request.form.get(
+                        "descripcion", ""
+                    ).strip()
+
+                    categorias_formulario = request.form.getlist(
+                        "categorias"
+                    )
+
+                    if not nombre:
+                        return (
+                            "El nombre del proveedor es obligatorio.",
+                            400
+                        )
+
+                    try:
+                        ids_categorias = list({
+                            int(valor)
+                            for valor in categorias_formulario
+                        })
+
+                    except ValueError:
+                        return "Categoría inválida.", 400
+
+                    ids_validos = {
+                        categoria["id"]
+                        for categoria in categorias
+                    }
+
+                    if not set(ids_categorias).issubset(ids_validos):
+                        return "Una categoría no existe.", 400
+
+                    cursor.execute("""
+                        INSERT INTO public.proveedor (
+                            nombre_proveedor,
+                            nombre_empresa,
+                            telefono,
+                            correo,
+                            descripcion,
+                            id_usuario
+                        )
+
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                        RETURNING id
+                    """, (
+                        nombre,
+                        empresa,
+                        telefono,
+                        correo,
+                        descripcion,
+                        id_admin
+                    ))
+
+                    nuevo_proveedor = cursor.fetchone()["id"]
+
+                    for id_categoria in ids_categorias:
+
+                        cursor.execute("""
+                            INSERT INTO public.proveedor_categoria (
+                                id_proveedor,
+                                id_categoria
+                            )
+
+                            VALUES (%s, %s)
+                        """, (
+                            nuevo_proveedor,
+                            id_categoria
+                        ))
+
+        if request.method == "POST":
+            return redirect(url_for("mis_proveedores"))
 
         return render_template(
-            "editar.html",
-            p=proveedor
+            "agregar.html",
+            categorias=categorias
         )
 
     except psycopg2.Error as e:
-
-        print("Error al editar proveedor:", e)
-
-        return "Error al editar el proveedor."
+        print("Error al agregar proveedor:", e)
+        return "Error al procesar el proveedor.", 500
 
 
-# ==========================
-# ELIMINAR PROVEEDOR
-# ==========================
+# ==========================================
+# EDITAR PROVEEDOR
+# ==========================================
 
-@app.route("/eliminar/<int:id>")
-def eliminar_proveedor(id):
+@app.route("/editar/<int:id>", methods=["GET", "POST"])
+@login_requerido
+def editar_proveedor(id):
 
-    if "usuario" not in session:
-
-        return redirect(url_for("login"))
+    id_admin = session["id_usuario"]
 
     try:
+        with conectar_bd() as conexion:
+            with conexion.cursor(
+                cursor_factory=RealDictCursor
+            ) as cursor:
 
-        conexion = conectar_bd()
-        cursor = conexion.cursor()
+                cursor.execute("""
+                    SELECT *
+                    FROM public.proveedor
+                    WHERE id = %s
+                      AND id_usuario = %s
+                """, (id, id_admin))
 
-        # Eliminamos únicamente si el proveedor
-        # pertenece al administrador actual
+                proveedor = cursor.fetchone()
 
-        cursor.execute(
-            """
-            DELETE FROM proveedor
-            WHERE id = %s
-            AND id_usuario = %s
-            """,
-            (
-                id,
-                session["id_usuario"]
-            )
-        )
+                if not proveedor:
+                    return "Proveedor no encontrado.", 404
 
-        conexion.commit()
+                cursor.execute("""
+                    SELECT id, nombre
+                    FROM public.categorias
+                    ORDER BY nombre ASC
+                """)
 
-        cursor.close()
-        conexion.close()
+                categorias = cursor.fetchall()
+
+                cursor.execute("""
+                    SELECT id_categoria
+                    FROM public.proveedor_categoria
+                    WHERE id_proveedor = %s
+                """, (id,))
+
+                categorias_seleccionadas = [
+                    fila["id_categoria"]
+                    for fila in cursor.fetchall()
+                ]
+
+                if request.method == "POST":
+
+                    nombre = request.form.get(
+                        "nombre", ""
+                    ).strip()
+
+                    empresa = request.form.get(
+                        "empresa", ""
+                    ).strip()
+
+                    telefono = request.form.get(
+                        "telefono", ""
+                    ).strip()
+
+                    correo = request.form.get(
+                        "correo", ""
+                    ).strip()
+
+                    descripcion = request.form.get(
+                        "descripcion", ""
+                    ).strip()
+
+                    categorias_formulario = request.form.getlist(
+                        "categorias"
+                    )
+
+                    if not nombre:
+                        return (
+                            "El nombre del proveedor es obligatorio.",
+                            400
+                        )
+
+                    try:
+                        ids_categorias = list({
+                            int(valor)
+                            for valor in categorias_formulario
+                        })
+
+                    except ValueError:
+                        return "Categoría inválida.", 400
+
+                    ids_validos = {
+                        categoria["id"]
+                        for categoria in categorias
+                    }
+
+                    if not set(ids_categorias).issubset(ids_validos):
+                        return "Una categoría no existe.", 400
+
+                    cursor.execute("""
+                        UPDATE public.proveedor
+                        SET
+                            nombre_proveedor = %s,
+                            nombre_empresa = %s,
+                            telefono = %s,
+                            correo = %s,
+                            descripcion = %s
+
+                        WHERE id = %s
+                          AND id_usuario = %s
+                    """, (
+                        nombre,
+                        empresa,
+                        telefono,
+                        correo,
+                        descripcion,
+                        id,
+                        id_admin
+                    ))
+
+                    cursor.execute("""
+                        DELETE FROM public.proveedor_categoria
+                        WHERE id_proveedor = %s
+                    """, (id,))
+
+                    for id_categoria in ids_categorias:
+
+                        cursor.execute("""
+                            INSERT INTO public.proveedor_categoria (
+                                id_proveedor,
+                                id_categoria
+                            )
+
+                            VALUES (%s, %s)
+                        """, (
+                            id,
+                            id_categoria
+                        ))
+
+                else:
+
+                    return render_template(
+                        "editar.html",
+                        p=proveedor,
+                        categorias=categorias,
+                        categorias_seleccionadas=categorias_seleccionadas
+                    )
 
         return redirect(url_for("mis_proveedores"))
 
     except psycopg2.Error as e:
+        print("Error al editar proveedor:", e)
+        return "Error al actualizar proveedor.", 500
 
+
+# ==========================================
+# ELIMINAR PROVEEDOR
+# ==========================================
+
+@app.route("/eliminar/<int:id>", methods=["POST"])
+@login_requerido
+def eliminar_proveedor(id):
+
+    id_admin = session["id_usuario"]
+
+    try:
+        with conectar_bd() as conexion:
+            with conexion.cursor() as cursor:
+
+                cursor.execute("""
+                    DELETE FROM public.proveedor
+                    WHERE id = %s
+                      AND id_usuario = %s
+                """, (id, id_admin))
+
+        return redirect(url_for("mis_proveedores"))
+
+    except psycopg2.Error as e:
         print("Error al eliminar proveedor:", e)
+        return "Error al eliminar proveedor.", 500
 
-        return "Error al eliminar el proveedor."
 
-
-# ==========================
+# ==========================================
 # CAMBIAR CONTRASEÑA
-# ==========================
+# ==========================================
 
-@app.route("/restablecer_contrasena", methods=["GET", "POST"])
+@app.route(
+    "/restablecer_contrasena",
+    methods=["GET", "POST"]
+)
+@login_requerido
 def restablecer_contrasena():
 
     error = None
@@ -501,63 +928,79 @@ def restablecer_contrasena():
 
     if request.method == "POST":
 
-        usuario = request.form.get("usuario", "").strip()
-        nueva = request.form.get("nueva", "").strip()
-        confirmar = request.form.get("confirmar", "").strip()
+        actual = request.form.get("actual", "")
+        nueva = request.form.get("nueva", "")
+        confirmar = request.form.get("confirmar", "")
 
-        if nueva != confirmar:
+        if not actual:
+            error = "Ingresa tu contraseña actual."
 
+        elif len(nueva) < 12:
+            error = (
+                "La nueva contraseña debe tener "
+                "al menos 12 caracteres."
+            )
+
+        elif nueva != confirmar:
             error = "Las contraseñas no coinciden."
 
         else:
 
             try:
+                with conectar_bd() as conexion:
+                    with conexion.cursor(
+                        cursor_factory=RealDictCursor
+                    ) as cursor:
 
-                conexion = conectar_bd()
-                cursor = conexion.cursor(cursor_factory=RealDictCursor)
+                        cursor.execute("""
+                            SELECT contrasena
+                            FROM public.usuario
+                            WHERE id = %s
+                        """, (session["id_usuario"],))
 
-                cursor.execute(
-                    """
-                    SELECT id
-                    FROM usuario
-                    WHERE LOWER(nombre_usuario) = LOWER(%s)
-                    """,
-                    (usuario,)
-                )
+                        datos = cursor.fetchone()
 
-                datos = cursor.fetchone()
+                        if not datos:
+                            error = "Usuario no encontrado."
 
-                if datos:
+                        else:
 
-                    id_admin = datos["id"]
+                            guardada = datos["contrasena"]
 
-                    cursor.execute(
-                        """
-                        UPDATE usuario
-                        SET contrasena = %s
-                        WHERE id = %s
-                        """,
-                        (
-                            nueva,
-                            id_admin
-                        )
-                    )
+                            if guardada.startswith(
+                                ("scrypt:", "pbkdf2:")
+                            ):
+                                valida = check_password_hash(
+                                    guardada,
+                                    actual
+                                )
+                            else:
+                                valida = guardada == actual
 
-                    conexion.commit()
+                            if not valida:
+                                error = "Contraseña actual incorrecta."
 
-                    exito = "Contraseña actualizada correctamente."
+                            else:
 
-                else:
+                                nueva_hash = generate_password_hash(
+                                    nueva
+                                )
 
-                    error = "Usuario no encontrado."
+                                cursor.execute("""
+                                    UPDATE public.usuario
+                                    SET contrasena = %s
+                                    WHERE id = %s
+                                """, (
+                                    nueva_hash,
+                                    session["id_usuario"]
+                                ))
 
-                cursor.close()
-                conexion.close()
+                                exito = (
+                                    "Contraseña actualizada correctamente."
+                                )
 
             except psycopg2.Error as e:
-
                 print("Error al cambiar contraseña:", e)
-
                 error = "No se pudo actualizar la contraseña."
 
     return render_template(
@@ -567,21 +1010,471 @@ def restablecer_contrasena():
     )
 
 
-# ==========================
+# ==========================================
+# SEGURIDAD DE FORMULARIOS DE PAGOS
+# ==========================================
+
+def token_formulario():
+
+    if "csrf_pagos" not in session:
+        session["csrf_pagos"] = secrets.token_urlsafe(32)
+
+    return session["csrf_pagos"]
+
+
+def validar_token_pago():
+
+    recibido = request.form.get("csrf_token", "")
+    esperado = session.get("csrf_pagos", "")
+
+    return bool(
+        recibido
+        and esperado
+        and secrets.compare_digest(recibido, esperado)
+    )
+
+
+# ==========================================
+# VALIDAR DATOS DE FACTURAS
+# ==========================================
+
+def validar_datos_factura(formulario, proveedores):
+
+    try:
+        id_proveedor = int(
+            formulario.get("id_proveedor", "")
+        )
+
+        numero = formulario.get(
+            "numero_factura", ""
+        ).strip()
+
+        monto = Decimal(
+            formulario.get("monto", "")
+        )
+
+        vencimiento = date.fromisoformat(
+            formulario.get("fecha_vencimiento", "")
+        )
+
+        if not numero or len(numero) > 100:
+            raise ValueError("Número de factura inválido.")
+
+        if (
+            not monto.is_finite()
+            or monto < 0
+            or monto > Decimal("9999999999.99")
+            or monto.as_tuple().exponent < -2
+        ):
+            raise ValueError("Monto inválido.")
+
+        ids_validos = {
+            proveedor["id"]
+            for proveedor in proveedores
+        }
+
+        if id_proveedor not in ids_validos:
+            raise ValueError("Proveedor inválido.")
+
+        return {
+            "id_proveedor": id_proveedor,
+            "numero_factura": numero,
+            "monto": monto,
+            "fecha_vencimiento": vencimiento
+        }
+
+    except (
+        ValueError,
+        InvalidOperation,
+        OverflowError,
+        TypeError
+    ):
+        return None
+
+
+# ==========================================
+# ESTADO AUTOMÁTICO DE PAGOS
+# ==========================================
+
+def estado_pago(pago, hoy=None):
+
+    if hoy is None:
+        hoy = date.today()
+
+    if pago["pagado"]:
+        return "Pagado"
+
+    if pago["fecha_vencimiento"] < hoy:
+        return "Vencido"
+
+    if pago["fecha_vencimiento"] <= hoy + timedelta(days=7):
+        return "Próximo a vencer"
+
+    return "Pendiente"
+
+
+# ==========================================
+# RECORDATORIOS DE PAGOS
+# ==========================================
+
+@app.route("/recordatorios", methods=["GET", "POST"])
+@login_requerido
+def recordatorios():
+
+    id_admin = session["id_usuario"]
+    error = None
+
+    try:
+        with conectar_bd() as conexion:
+            with conexion.cursor(
+                cursor_factory=RealDictCursor
+            ) as cursor:
+
+                # PROVEEDORES DEL USUARIO
+
+                cursor.execute("""
+                    SELECT
+                        id,
+                        nombre_proveedor,
+                        nombre_empresa
+
+                    FROM public.proveedor
+
+                    WHERE id_usuario = %s
+                    ORDER BY nombre_proveedor ASC
+                """, (id_admin,))
+
+                proveedores = cursor.fetchall()
+
+                # REGISTRAR NUEVA FACTURA
+
+                if request.method == "POST":
+
+                    if not validar_token_pago():
+                        return (
+                            "Formulario inválido. Actualiza la página.",
+                            400
+                        )
+
+                    datos = validar_datos_factura(
+                        request.form,
+                        proveedores
+                    )
+
+                    if not datos:
+
+                        error = (
+                            "Revisa el proveedor, número de factura, "
+                            "monto y fecha de vencimiento."
+                        )
+
+                    else:
+
+                        cursor.execute("""
+                            INSERT INTO public.recordatorios_pago (
+                                id_proveedor,
+                                numero_factura,
+                                monto,
+                                fecha_vencimiento
+                            )
+
+                            VALUES (%s, %s, %s, %s)
+                        """, (
+                            datos["id_proveedor"],
+                            datos["numero_factura"],
+                            datos["monto"],
+                            datos["fecha_vencimiento"]
+                        ))
+
+                # CONSULTAR TODAS LAS FACTURAS
+
+                cursor.execute("""
+                    SELECT
+                        r.id,
+                        r.id_proveedor,
+                        r.numero_factura,
+                        r.monto,
+                        r.fecha_vencimiento,
+                        r.pagado,
+                        r.fecha_pago,
+                        p.nombre_proveedor,
+                        p.nombre_empresa
+
+                    FROM public.recordatorios_pago r
+
+                    JOIN public.proveedor p
+                        ON p.id = r.id_proveedor
+
+                    WHERE p.id_usuario = %s
+
+                    ORDER BY
+                        r.pagado ASC,
+                        r.fecha_vencimiento ASC,
+                        r.id DESC
+                """, (id_admin,))
+
+                pagos = cursor.fetchall()
+
+        if request.method == "POST" and not error:
+            return redirect(url_for("recordatorios"))
+
+        hoy = date.today()
+
+        for pago in pagos:
+            pago["estado"] = estado_pago(pago, hoy)
+
+        return render_template(
+            "recordatorios.html",
+            usuario=session["usuario"],
+            proveedores=proveedores,
+            pagos=pagos,
+            error=error,
+            csrf_token=token_formulario(),
+            hoy=hoy
+        )
+
+    except psycopg2.Error as e:
+        print("Error en recordatorios:", e)
+
+        return (
+            "No se pudieron cargar los recordatorios.",
+            500
+        )
+
+
+# ==========================================
+# EDITAR RECORDATORIO
+# ==========================================
+
+@app.route(
+    "/recordatorios/<int:id_pago>/editar",
+    methods=["GET", "POST"]
+)
+@login_requerido
+def editar_recordatorio(id_pago):
+
+    id_admin = session["id_usuario"]
+    error = None
+
+    try:
+        with conectar_bd() as conexion:
+            with conexion.cursor(
+                cursor_factory=RealDictCursor
+            ) as cursor:
+
+                # COMPROBAR PROPIEDAD DEL RECORDATORIO
+
+                cursor.execute("""
+                    SELECT r.*
+                    FROM public.recordatorios_pago r
+
+                    JOIN public.proveedor p
+                        ON p.id = r.id_proveedor
+
+                    WHERE r.id = %s
+                      AND p.id_usuario = %s
+                """, (id_pago, id_admin))
+
+                pago = cursor.fetchone()
+
+                if not pago:
+                    return "Recordatorio no encontrado.", 404
+
+                # PROVEEDORES DISPONIBLES
+
+                cursor.execute("""
+                    SELECT
+                        id,
+                        nombre_proveedor,
+                        nombre_empresa
+
+                    FROM public.proveedor
+
+                    WHERE id_usuario = %s
+                    ORDER BY nombre_proveedor ASC
+                """, (id_admin,))
+
+                proveedores = cursor.fetchall()
+
+                # GUARDAR CAMBIOS
+
+                if request.method == "POST":
+
+                    if not validar_token_pago():
+                        return "Formulario inválido.", 400
+
+                    datos = validar_datos_factura(
+                        request.form,
+                        proveedores
+                    )
+
+                    if not datos:
+
+                        error = (
+                            "Revisa los datos del recordatorio."
+                        )
+
+                    else:
+
+                        cursor.execute("""
+                            UPDATE public.recordatorios_pago r
+
+                            SET
+                                id_proveedor = %s,
+                                numero_factura = %s,
+                                monto = %s,
+                                fecha_vencimiento = %s
+
+                            FROM public.proveedor p
+
+                            WHERE r.id = %s
+                              AND r.id_proveedor = p.id
+                              AND p.id_usuario = %s
+                        """, (
+                            datos["id_proveedor"],
+                            datos["numero_factura"],
+                            datos["monto"],
+                            datos["fecha_vencimiento"],
+                            id_pago,
+                            id_admin
+                        ))
+
+                else:
+
+                    return render_template(
+                        "editar_recordatorio.html",
+                        usuario=session["usuario"],
+                        pago=pago,
+                        proveedores=proveedores,
+                        error=error,
+                        csrf_token=token_formulario()
+                    )
+
+        if request.method == "POST" and not error:
+            return redirect(url_for("recordatorios"))
+
+        return render_template(
+            "editar_recordatorio.html",
+            usuario=session["usuario"],
+            pago=pago,
+            proveedores=proveedores,
+            error=error,
+            csrf_token=token_formulario()
+        )
+
+    except psycopg2.Error as e:
+        print("Error al editar recordatorio:", e)
+        return "No se pudo editar el recordatorio.", 500
+
+
+# ==========================================
+# MARCAR FACTURA PAGADA O REABRIR
+# ==========================================
+
+@app.route(
+    "/recordatorios/<int:id_pago>/estado",
+    methods=["POST"]
+)
+@login_requerido
+def cambiar_estado_recordatorio(id_pago):
+
+    if not validar_token_pago():
+        return "Formulario inválido.", 400
+
+    accion = request.form.get("accion")
+
+    if accion not in ("pagar", "reabrir"):
+        return "Acción inválida.", 400
+
+    pagado = accion == "pagar"
+
+    try:
+        with conectar_bd() as conexion:
+            with conexion.cursor() as cursor:
+
+                cursor.execute("""
+                    UPDATE public.recordatorios_pago r
+
+                    SET
+                        pagado = %s,
+
+                        fecha_pago = CASE
+                            WHEN %s THEN CURRENT_DATE
+                            ELSE NULL
+                        END
+
+                    FROM public.proveedor p
+
+                    WHERE r.id = %s
+                      AND r.id_proveedor = p.id
+                      AND p.id_usuario = %s
+                """, (
+                    pagado,
+                    pagado,
+                    id_pago,
+                    session["id_usuario"]
+                ))
+
+        return redirect(url_for("recordatorios"))
+
+    except psycopg2.Error as e:
+        print("Error al cambiar estado:", e)
+        return "No se pudo cambiar el estado.", 500
+
+
+# ==========================================
+# ELIMINAR RECORDATORIO
+# ==========================================
+
+@app.route(
+    "/recordatorios/<int:id_pago>/eliminar",
+    methods=["POST"]
+)
+@login_requerido
+def eliminar_recordatorio(id_pago):
+
+    if not validar_token_pago():
+        return "Formulario inválido.", 400
+
+    try:
+        with conectar_bd() as conexion:
+            with conexion.cursor() as cursor:
+
+                cursor.execute("""
+                    DELETE FROM public.recordatorios_pago r
+
+                    USING public.proveedor p
+
+                    WHERE r.id = %s
+                      AND r.id_proveedor = p.id
+                      AND p.id_usuario = %s
+                """, (
+                    id_pago,
+                    session["id_usuario"]
+                ))
+
+        return redirect(url_for("recordatorios"))
+
+    except psycopg2.Error as e:
+        print("Error al eliminar recordatorio:", e)
+        return "No se pudo eliminar el recordatorio.", 500
+
+
+# ==========================================
 # CERRAR SESIÓN
-# ==========================
+# ==========================================
 
 @app.route("/logout")
 def logout():
 
     session.clear()
 
-    return redirect(url_for("inicio"))
+    return redirect(url_for("login"))
 
 
-# ==========================
+# ==========================================
 # FAVICON
-# ==========================
+# ==========================================
 
 @app.route("/favicon.ico")
 def favicon():
@@ -589,14 +1482,14 @@ def favicon():
     return "", 204
 
 
-# ==========================
+# ==========================================
 # EJECUTAR APLICACIÓN
-# ==========================
+# ==========================================
 
 if __name__ == "__main__":
 
     app.run(
         host="0.0.0.0",
-        port=5000
+        port=5000,
+        debug=False
     )
-

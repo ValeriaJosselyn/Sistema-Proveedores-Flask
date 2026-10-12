@@ -1,420 +1,276 @@
+
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Proveedores | Sistema de Proveedores</title>
 
-<title>Mis Proveedores</title>
-
-<style>
-
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-}
-
-body{
-
-    background:#F8F4FF;
-    font-family:Arial, Helvetica, sans-serif;
-
-}
-
-/*================ HEADER ================*/
-
-header{
-
-    background:linear-gradient(135deg,#8E44AD,#B784F7);
-
-    color:white;
-
-    display:flex;
-
-    justify-content:space-between;
-
-    align-items:center;
-
-    padding:20px 40px;
-
-    box-shadow:0 6px 15px rgba(0,0,0,.15);
-
-}
-
-header h2{
-
-    font-size:28px;
-
-}
-
-.btn-volver{
-
-    text-decoration:none;
-
-    color:white;
-
-    background:rgba(255,255,255,.2);
-
-    padding:12px 20px;
-
-    border-radius:30px;
-
-    transition:.3s;
-
-    font-weight:bold;
-
-}
-
-.btn-volver:hover{
-
-    background:white;
-
-    color:#8E44AD;
-
-}
-
-/*================ CONTENEDOR ================*/
-
-.contenedor{
-
-    width:90%;
-
-    margin:40px auto;
-
-    background:white;
-
-    border-radius:20px;
-
-    padding:35px;
-
-    box-shadow:0 8px 20px rgba(142,68,173,.15);
-
-}
-
-.titulo-seccion{
-
-    display:flex;
-
-    justify-content:space-between;
-
-    align-items:center;
-
-    margin-bottom:25px;
-
-}
-
-.titulo-seccion h3{
-
-    color:#7B2CBF;
-
-    font-size:28px;
-
-}
-
-.btn-crear{
-
-    background:#9C4DCC;
-
-    color:white;
-
-    text-decoration:none;
-
-    padding:12px 22px;
-
-    border-radius:30px;
-
-    font-weight:bold;
-
-    transition:.3s;
-
-}
-
-.btn-crear:hover{
-
-    background:#7B2CBF;
-
-    transform:scale(1.05);
-
-}
-
-/*================ TABLA ================*/
-
-table{
-
-    width:100%;
-
-    border-collapse:collapse;
-
-    overflow:hidden;
-
-    border-radius:15px;
-
-}
-
-th{
-
-    background:#F1E4FF;
-
-    color:#6A1B9A;
-
-    padding:16px;
-
-    text-align:left;
-
-}
-
-td{
-
-    padding:15px;
-
-    border-bottom:1px solid #EFE7FA;
-
-}
-
-tr:hover{
-
-    background:#FAF6FF;
-
-}
-
-/*================ BOTONES ================*/
-
-.acciones{
-
-    white-space:nowrap;
-
-}
-
-.btn-editar{
-
-    text-decoration:none;
-
-    background:#B784F7;
-
-    color:white;
-
-    padding:8px 14px;
-
-    border-radius:20px;
-
-    margin-right:8px;
-
-    transition:.3s;
-
-}
-
-.btn-editar:hover{
-
-    background:#8E44AD;
-
-}
-
-.btn-eliminar{
-
-    text-decoration:none;
-
-    background:#F06292;
-
-    color:white;
-
-    padding:8px 14px;
-
-    border-radius:20px;
-
-    transition:.3s;
-
-}
-
-.btn-eliminar:hover{
-
-    background:#D81B60;
-
-}
-
-.mensaje-vacio{
-
-    text-align:center;
-
-    padding:40px;
-
-    color:#777;
-
-    font-size:18px;
-
-}
-
-/*================ RESPONSIVE ================*/
-
-@media (max-width: 768px){
-
-    header{
-
-        flex-direction:column;
-        gap:15px;
-        text-align:center;
-        padding:20px;
-
-    }
-
-    header h2{
-
-        font-size:24px;
-
-    }
-
-    .contenedor{
-
-        width:95%;
-        padding:20px;
-        margin:20px auto;
-
-    }
-
-    .titulo-seccion{
-
-        flex-direction:column;
-        gap:15px;
-        text-align:center;
-
-    }
-
-    .titulo-seccion h3{
-
-        font-size:24px;
-
-    }
-
-    .btn-crear{
-
-        width:100%;
-        text-align:center;
-
-    }
-
-    /* Hace que la tabla se pueda deslizar */
-    .tabla-responsive{
-
-        overflow-x:auto;
-
-    }
-
-    table{
-
-        min-width:700px;
-
-    }
-
-}
-
-</style>
-
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/panel.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/proveedores-vistas.css') }}">
 </head>
-
 <body>
 
-<header>
+<div class="layout">
 
-    <h2> Panel de Gestión</h2>
+    <!-- Menú provisional; después reutilizaremos el de panel.html -->
+    <aside class="sidebar oculto" id="sidebar">
+        <div class="logo">
+            <span class="logo-icono">✦</span>
+            <span>Sistema de<br>Proveedores</span>
+        </div>
 
-    <a href="/panel" class="btn-volver">
-        ⬅ Volver al Menú
-    </a>
+        <nav class="menu">
+            <a href="{{ url_for('panel') }}"> Inicio</a>
+            <a href="{{ url_for('mis_proveedores') }}" class="activo"> Mis proveedores</a>
+            <a href="{{ url_for('buscar_proveedores') }}">Buscar proveedores</a>
+            <a href="{{ url_for('agregar_provider') }}"> Agregar proveedor</a>
+            <a href="{{ url_for('recordatorios') }}"> Recordatorios</a>
+        </nav>
 
-</header>
+        <div class="sidebar-footer">
+            <a href="{{ url_for('logout') }}">Cerrar sesión</a>
+        </div>
+    </aside>
 
-<div class="contenedor">
+    <main class="main">
 
-    <div class="titulo-seccion">
+        <header class="topbar">
+            <button class="menu-toggle" id="menuToggle" type="button" aria-label="Abrir o cerrar menú">☰</button>
 
-        <h3>📦 Mis Proveedores</h3>
+            <div class="perfil">
+                <div class="perfil-texto">
+                    <strong>{{ usuario | default('Administrador') }}</strong>
+                    <small>Gestión de proveedores</small>
+                </div>
+                <div class="avatar">👤</div>
+            </div>
+        </header>
 
-        <a href="/agregar" class="btn-crear">
-             Agregar Nuevo
-        </a>
+        <div class="contenido">
 
-    </div>
+            <div class="bienvenida-superior">
+                <div class="bienvenida">
+                    <h1> Mis Proveedores</h1>
+                    <p>Administra y actualiza los proveedores registrados.</p>
+                </div>
 
-    {% if proveedores %}
-
-    <div class="tabla-responsive">
-
-    <table>
-
-        <thead>
-
-            <tr>
-
-                <th>Proveedor</th>
-
-                <th>Empresa</th>
-
-                <th>Teléfono</th>
-
-                <th>Correo</th>
-
-                <th>Acciones</th>
-
-            </tr>
-
-        </thead>
-
-        <tbody>
-
-        {% for p in proveedores %}
-
-        <tr>
-
-            <td><strong>{{ p.nombre_proveedor }}</strong></td>
-
-            <td>{{ p.nombre_empresa }}</td>
-
-            <td>{{ p.telefono }}</td>
-
-            <td>{{ p.correo }}</td>
-
-            <td class="acciones">
-
-                <a href="/editar/{{ p.id }}" class="btn-editar">
-                    ✏️ Editar
+                <a href="{{ url_for('agregar_provider') }}" class="btn-agregar">
+                     Agregar proveedor
                 </a>
+            </div>
 
-                <a href="/eliminar/{{ p.id }}"
-                   class="btn-eliminar"
-                   onclick="return confirm('¿Deseas eliminar este proveedor?');">
+            <section class="vista-caja">
 
-                    🗑️ Eliminar
+                <div class="vista-caja-encabezado">
+                    <div>
+                        <h2>Listado de proveedores</h2>
+                        <p>Consulta, edita y administra tu directorio.</p>
+                    </div>
+  
+                </div>
 
-                </a>
+                {% if proveedores %}
 
-            </td>
+                <div class="tabla-contenido vista-tabla-scroll">
+                    <table class="tabla-proveedores vista-tabla" id="tabla-proveedores">
+                        <thead>
+                            <tr>
+                                <th>Proveedor</th>
+                                <th>Empresa</th>
+                                <th>Teléfono</th>
+                                <th>Correo</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
 
-        </tr>
+                        <tbody>
+                            {% for p in proveedores %}
+                            <tr class="fila-proveedor">
+                                <td>
+                                    <strong>{{ p.nombre_proveedor or 'Sin nombre' }}</strong>
+                                </td>
 
-        {% endfor %}
+                                <td>{{ p.nombre_empresa or 'No registrada' }}</td>
 
+                                <td>
+                                    {% if p.telefono %}
+                                    <a class="enlace-contacto" href="tel:{{ p.telefono }}">
+                                        {{ p.telefono }}
+                                    </a>
+                                    {% else %}
+                                    <span class="texto-suave">No registrado</span>
+                                    {% endif %}
+                                </td>
 
-                </tbody>
+                                <td>
+                                    {% if p.correo %}
+                                    <a class="enlace-contacto" href="mailto:{{ p.correo }}">
+                                        {{ p.correo }}
+                                    </a>
+                                    {% else %}
+                                    <span class="texto-suave">No registrado</span>
+                                    {% endif %}
+                                </td>
 
-    </table>
+                                <td>
+                                    <div class="vista-acciones">
+                                        <a
+                                            class="vista-btn-editar"
+                                            href="/editar/{{ p.id }}"
+                                        >
+                                             Editar
+                                        </a>
 
-    </div>
+                                        <form
+                                            action="{{ url_for('eliminar_proveedor', id=p.id) }}"
+                                            method="POST"
+                                            style="display: inline;"
+                                            onsubmit="return confirm('¿Estás segura de que deseas eliminar este proveedor?');"
+                                        >
+                                            <button
+                                            type="submit"
+                                            class="vista-btn-eliminar"
+                                            >
+                                                Eliminar
+                                            </button>
+                                    </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
 
-    {% else %}
+                <div class="vista-pie-tabla">
+                    <span id="contador-registros"></span>
 
-    <div class="mensaje-vacio">
+                    <div class="vista-paginacion">
+                        <button id="pagina-anterior" type="button">
+                            ← Anterior
+                        </button>
 
-        📦 Aún no has registrado ningún proveedor.<br><br>
+                        <span id="pagina-actual"></span>
 
-        Haz clic en <strong>" Agregar Nuevo"</strong> para comenzar.
+                        <button id="pagina-siguiente" type="button">
+                            Siguiente →
+                        </button>
+                    </div>
+                </div>
 
-    </div>
+                <p id="sin-resultados" class="vista-sin-resultados" hidden>
+                    No se encontraron proveedores con ese filtro.
+                </p>
 
-    {% endif %}
+                {% else %}
 
+                <div class="vista-vacio">
+                    <span></span>
+                    <h3>Aún no tienes proveedores registrados</h3>
+                    <p>Agrega tu primer proveedor para comenzar a organizar el directorio.</p>
+
+                    <a href="{{ url_for('agregar_provider') }}" class="btn-agregar">
+                        + Agregar proveedor
+                    </a>
+                </div>
+
+                {% endif %}
+
+            </section>
+
+        </div>
+    </main>
 </div>
 
-</body>
+<script>
+const sidebar = document.getElementById("sidebar");
+const menuToggle = document.getElementById("menuToggle");
 
+if (window.innerWidth > 650) {
+    sidebar.classList.remove("oculto");
+}
+
+menuToggle.addEventListener("click", () => {
+    sidebar.classList.toggle("oculto");
+});
+
+const filtro = document.getElementById("filtro-proveedores");
+
+if (filtro) {
+    const filas = Array.from(
+        document.querySelectorAll(".fila-proveedor")
+    );
+
+    const contador = document.getElementById("contador-registros");
+    const paginaActual = document.getElementById("pagina-actual");
+    const botonAnterior = document.getElementById("pagina-anterior");
+    const botonSiguiente = document.getElementById("pagina-siguiente");
+    const sinResultados = document.getElementById("sin-resultados");
+
+    const porPagina = 10;
+    let pagina = 1;
+    let filasFiltradas = [...filas];
+
+    function actualizarTabla() {
+        const total = filasFiltradas.length;
+        const totalPaginas = Math.max(1, Math.ceil(total / porPagina));
+
+        pagina = Math.min(Math.max(1, pagina), totalPaginas);
+
+        const inicio = (pagina - 1) * porPagina;
+        const fin = inicio + porPagina;
+
+        filas.forEach(fila => {
+            fila.hidden = true;
+        });
+
+        filasFiltradas.slice(inicio, fin).forEach(fila => {
+            fila.hidden = false;
+        });
+
+        contador.textContent =
+            total === 0
+                ? "0 proveedores encontrados"
+                : `Mostrando ${inicio + 1}-${Math.min(fin, total)} de ${total} proveedores`;
+
+        paginaActual.textContent = `Página ${pagina} de ${totalPaginas}`;
+
+        botonAnterior.disabled = pagina === 1;
+        botonSiguiente.disabled = pagina === totalPaginas;
+
+        sinResultados.hidden = total !== 0;
+    }
+
+    filtro.addEventListener("input", () => {
+        const texto = filtro.value
+            .trim()
+            .toLocaleLowerCase("es");
+
+        filasFiltradas = filas.filter(fila =>
+            fila.textContent.toLocaleLowerCase("es").includes(texto)
+        );
+
+        pagina = 1;
+        actualizarTabla();
+    });
+
+    botonAnterior.addEventListener("click", () => {
+        if (pagina > 1) {
+            pagina--;
+            actualizarTabla();
+        }
+    });
+
+    botonSiguiente.addEventListener("click", () => {
+        pagina++;
+        actualizarTabla();
+    });
+
+    actualizarTabla();
+}
+</script>
+
+</body>
 </html>

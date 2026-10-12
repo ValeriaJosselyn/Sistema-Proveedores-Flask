@@ -2,49 +2,1125 @@
 <html lang="es">
 
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<meta charset="UTF-8">
+    <title>Panel Administrativo | Proveedores</title>
 
-<title>Panel de Administración</title>
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/panel.css') }}">
 
-<link rel="stylesheet"
-href="{{ url_for('static', filename='css/panel.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    <style>
+        .grafica-mensual {
+            position: relative;
+            width: 100%;
+            height: 310px;
+            margin-top: 20px;
+        }
+
+        .grafica-mensual canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        @media (max-width: 768px) {
+            .grafica-mensual {
+                height: 260px;
+            }
+        }
+    </style>
 </head>
 
 <body>
 
-<div class="panel">
+<div class="layout">
 
-    <h1>   Bienvenida {{ usuario }} </h1>
+    <!-- ==========================================
+         MENÚ LATERAL
+    ========================================== -->
 
-    <p class="subtitulo">Bienvenida, <strong>{{ usuario }}</strong> ¿Qué deseas hacer hoy?</p>
+    <aside class="sidebar" id="sidebar">
+
+        <div class="logo">
+            <span class="logo-icono">✦</span>
+            <span>Proveedores</span>
+        </div>
+
+        <nav class="menu">
+
+            <a href="{{ url_for('panel') }}" class="activo">
+                <span>⌂</span> Inicio
+            </a>
+
+            <a href="{{ url_for('mis_proveedores') }}">
+                <span>♙</span> Mis proveedores
+            </a>
+
+            <a href="{{ url_for('buscar_proveedores') }}">
+                <span>⌕</span> Buscar proveedores
+            </a>
+
+            <a href="{{ url_for('agregar_provider') }}">
+                <span>＋</span> Agregar proveedor
+            </a>
+
+            <a href="{{ url_for('recordatorios') }}">
+                <span>▣</span> Recordatorios de pagos
+            </a>
+
+            <a href="{{ url_for('restablecer_contrasena') }}">
+                <span>⚙</span> Configuración
+            </a>
+
+        </nav>
+
+        <div class="sidebar-footer">
+            <a href="{{ url_for('logout') }}">
+                ↪ Cerrar sesión
+            </a>
+        </div>
+
+    </aside>
 
 
-    <div class="menu">
+    <!-- ==========================================
+         CONTENIDO PRINCIPAL
+    ========================================== -->
 
-        <a href="/proveedores">
+    <div class="main">
 
-             Mis proveedores
+        <!-- BARRA SUPERIOR -->
 
-        </a>
+        <header class="topbar">
 
-        <a href="/agregar">
+            <button
+                type="button"
+                class="menu-toggle"
+                id="menuToggle"
+                aria-label="Mostrar u ocultar menú">
+                ☰
+            </button>
 
-             Agregar proveedor
+            <div class="perfil">
 
-        </a>
+                <!-- NOTIFICACIONES -->
 
-        <a href="/logout">
+                <div class="notificaciones" id="notificaciones">
 
-             Cerrar sesión
+                    <button
+                        type="button"
+                        class="campana-boton"
+                        id="botonCampana"
+                        aria-label="Ver notificaciones de pagos"
+                        aria-expanded="false"
+                        aria-controls="panelNotificaciones">
 
-        </a>
+                        <span aria-hidden="true">🔔</span>
+
+                        {% if total_notificaciones | default(0) > 0 %}
+                        <span class="campana-contador">
+                            {{ total_notificaciones }}
+                        </span>
+                        {% endif %}
+
+                    </button>
+
+                    <div
+                        class="notificaciones-panel"
+                        id="panelNotificaciones"
+                        hidden>
+
+                        <div class="notificaciones-encabezado">
+                            <strong>🔔 Notificaciones de pagos</strong>
+
+                            <span>
+                                {{ total_notificaciones | default(0) }}
+                                facturas requieren atención
+                            </span>
+                        </div>
+
+                        <div class="notificaciones-lista">
+
+                            {% for pago in notificaciones_pago | default([]) %}
+
+                            <a
+                                class="notificacion-item"
+                                href="{{ url_for('recordatorios') }}">
+
+                                {% if pago.fecha_vencimiento < hoy %}
+
+                                <span class="notificacion-estado vencida">
+                                    🔴 Factura vencida
+                                </span>
+
+                                {% elif pago.fecha_vencimiento == hoy %}
+
+                                <span class="notificacion-estado proxima">
+                                    🟠 Vence hoy
+                                </span>
+
+                                {% else %}
+
+                                <span class="notificacion-estado proxima">
+                                    🟠 Próxima a vencer
+                                </span>
+
+                                {% endif %}
+
+                                <strong>
+                                    {{ pago.nombre_proveedor }}
+                                </strong>
+
+                                <span>
+                                    Factura: {{ pago.numero_factura }}
+                                </span>
+
+                                <span>
+                                    Monto:
+                                    ${{ "{:,.2f}".format(pago.monto) }} MXN
+                                </span>
+
+                                <small>
+                                    Vencimiento:
+                                    {{ pago.fecha_vencimiento.strftime('%d/%m/%Y') }}
+                                </small>
+
+                            </a>
+
+                            {% else %}
+
+                            <div class="notificaciones-vacias">
+                                <span>💜</span>
+                                <p>¡Todo está al día!</p>
+                                <small>
+                                    No hay facturas vencidas
+                                    ni próximas a vencer.
+                                </small>
+                            </div>
+
+                            {% endfor %}
+
+                        </div>
+
+                        <a
+                            href="{{ url_for('recordatorios') }}"
+                            class="notificaciones-ver">
+                            Ver todos los recordatorios →
+                        </a>
+
+                    </div>
+                </div>
+
+                <!-- PERFIL -->
+
+                <div class="perfil-texto">
+                    <strong>{{ usuario }}</strong>
+                    <small>Administrador</small>
+                </div>
+
+                <div class="avatar">
+                    {{ usuario[0] | upper if usuario else 'A' }}
+                </div>
+
+            </div>
+
+        </header>
+
+
+        <!-- ==========================================
+             DASHBOARD
+        ========================================== -->
+
+        <main class="contenido">
+
+            <!-- BIENVENIDA -->
+
+            <section class="bienvenida">
+
+                <div class="bienvenida-superior">
+
+                    <div>
+                        <h1>¡Bienvenido al sistema! </h1>
+
+                        <p>
+                            Consulta la información de tus proveedores,
+                            analiza sus categorías y administra tus registros.
+                        </p>
+                    </div>
+
+                    <a
+                        href="{{ url_for('agregar_provider') }}"
+                        class="btn-agregar">
+                        + Agregar proveedor
+                    </a>
+
+                </div>
+
+            </section>
+
+
+            <!-- ==========================================
+                 TARJETAS DE INDICADORES
+            ========================================== -->
+
+            <section class="tarjetas">
+
+                <article class="tarjeta morada">
+
+                    <div class="tarjeta-icono">♙</div>
+
+                    <div>
+                        <h3>Proveedores</h3>
+
+                        <strong>
+                            {{ total_proveedores | default(0) }}
+                        </strong>
+
+                        <p>Proveedores registrados</p>
+                    </div>
+
+                </article>
+
+
+                <article class="tarjeta rosa">
+
+                    <div class="tarjeta-icono">✉</div>
+
+                    <div>
+                        <h3>Contactos completos</h3>
+
+                        <strong>
+                            {{ porcentaje_contacto | default(0) }}%
+                        </strong>
+
+                        <p>
+                            {{ contacto_completo | default(0) }}
+                            proveedores con correo y teléfono
+                        </p>
+                    </div>
+
+                </article>
+
+
+                <article class="tarjeta verde">
+
+                    <div class="tarjeta-icono">▤</div>
+
+                    <div>
+                        <h3>Categorías</h3>
+
+                        <strong>
+                            {{ total_categorias | default(0) }}
+                        </strong>
+
+                        <p>Categorías utilizadas</p>
+                    </div>
+
+                </article>
+
+
+                <article class="tarjeta naranja">
+
+                    <div class="tarjeta-icono">▣</div>
+
+                    <div>
+                        <h3>Pagos pendientes</h3>
+
+                        <strong>
+                            {{ total_pagos_pendientes | default(0) }}
+                        </strong>
+
+                        <p>
+                            ${{ "{:,.2f}".format(
+                                monto_pendiente | default(0)
+                            ) }} MXN pendientes
+                        </p>
+                    </div>
+
+                </article>
+
+            </section>
+
+
+            <!-- ==========================================
+                 GRÁFICAS CIRCULARES
+            ========================================== -->
+
+            <section class="graficas" id="graficas">
+
+                <!-- CATEGORÍAS -->
+
+                <article class="caja">
+
+                    <h2>Proveedores por categoría</h2>
+
+                    <p class="subtitulo-grafica">
+                        Distribución de categorías asignadas
+                    </p>
+
+                    {% if nombres_categorias | default([]) %}
+
+                    <div class="grafica-categorias">
+                        <canvas id="graficaCategorias"></canvas>
+                    </div>
+
+                    <p class="nota-grafica">
+                        Un proveedor puede pertenecer a varias categorías.
+                    </p>
+
+                    {% else %}
+
+                    <div class="grafica-vacia">
+                        <span>◌</span>
+
+                        <p>
+                            Todavía no hay proveedores
+                            con categorías asignadas.
+                        </p>
+                    </div>
+
+                    {% endif %}
+
+                </article>
+
+
+                <!-- CALIDAD DE CONTACTOS -->
+
+                <article class="caja">
+
+                    <h2>Calidad de información de contacto</h2>
+
+                    <p class="subtitulo-grafica">
+                        Disponibilidad de correo y teléfono
+                        en los registros de proveedores
+                    </p>
+
+                    {% if total_proveedores | default(0) > 0 %}
+
+                    <div class="grafica-categorias">
+                        <canvas id="graficaContactos"></canvas>
+                    </div>
+
+                    <p class="nota-grafica">
+                        Completo: correo y teléfono.
+                        Parcial: solo uno de los dos.
+                    </p>
+
+                    {% else %}
+
+                    <div class="grafica-vacia">
+                        <span>✉</span>
+
+                        <p>
+                            Registra proveedores para analizar
+                            sus datos de contacto.
+                        </p>
+                    </div>
+
+                    {% endif %}
+
+                </article>
+
+            </section>
+
+
+            <!-- ==========================================
+                 NUEVAS GRÁFICAS MENSUALES
+            ========================================== -->
+
+            <section class="graficas" id="graficas-mensuales">
+
+                <!-- PROVEEDORES POR MES -->
+
+                <article class="caja">
+
+                    <h2>Proveedores registrados por mes</h2>
+
+                    <p class="subtitulo-grafica">
+                        Evolución mensual de los proveedores
+                        agregados durante {{ hoy.year }}.
+                    </p>
+
+                    <div class="grafica-mensual">
+                        <canvas id="graficaProveedoresMes"></canvas>
+                    </div>
+
+                    <p class="nota-grafica">
+                        Se utiliza la fecha de registro
+                        almacenada en Supabase.
+                    </p>
+
+                </article>
+
+
+                <!-- PAGOS POR MES -->
+
+                <article class="caja">
+
+                    <h2>Pagos realizados por mes</h2>
+
+                    <p class="subtitulo-grafica">
+                        Monto total de facturas marcadas
+                        como pagadas durante {{ hoy.year }}.
+                    </p>
+
+                    <div class="grafica-mensual">
+                        <canvas id="graficaPagosMes"></canvas>
+                    </div>
+
+                    <p class="nota-grafica">
+                        Los montos corresponden a facturas
+                        registradas como pagadas.
+                    </p>
+
+                </article>
+
+            </section>
+
+
+            <!-- ==========================================
+                 TABLAS
+            ========================================== -->
+
+            <section class="tablas">
+
+                <!-- PROVEEDORES RECIENTES -->
+
+                <article class="caja">
+
+                    <h2>Proveedores recientes</h2>
+
+                    <div class="tabla-contenido">
+
+                        <table class="tabla-proveedores">
+
+                            <thead>
+                                <tr>
+                                    <th>Proveedor</th>
+                                    <th>Empresa</th>
+                                    <th>Producto / Servicio</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+
+                                {% for proveedor in proveedores_recientes | default([]) %}
+
+                                <tr>
+                                    <td>
+                                        {{ proveedor.nombre_proveedor }}
+                                    </td>
+
+                                    <td>
+                                        {{ proveedor.nombre_empresa or '—' }}
+                                    </td>
+
+                                    <td>
+                                        {{ proveedor.descripcion or '—' }}
+                                    </td>
+                                </tr>
+
+                                {% else %}
+
+                                <tr>
+                                    <td colspan="3" class="sin-datos">
+                                        No hay proveedores registrados.
+                                    </td>
+                                </tr>
+
+                                {% endfor %}
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                    <a
+                        href="{{ url_for('mis_proveedores') }}"
+                        class="ver-todos">
+                        Ver todos los proveedores →
+                    </a>
+
+                </article>
+
+
+                <!-- RECORDATORIOS -->
+
+                <article class="caja" id="recordatorios">
+
+                    <h2>Recordatorios de pagos</h2>
+
+                    <p class="subtitulo-grafica">
+                        Próximas facturas pendientes de pago.
+                    </p>
+
+                    <div class="tabla-contenido">
+
+                        <table class="tabla-proveedores">
+
+                            <thead>
+                                <tr>
+                                    <th>Proveedor</th>
+                                    <th>Factura</th>
+                                    <th>Monto</th>
+                                    <th>Vencimiento</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+
+                                {% for pago in pagos_proximos | default([]) %}
+
+                                <tr>
+                                    <td>
+                                        {{ pago.nombre_proveedor }}
+                                    </td>
+
+                                    <td>
+                                        {{ pago.numero_factura }}
+                                    </td>
+
+                                    <td>
+                                        ${{ "{:,.2f}".format(pago.monto) }}
+                                    </td>
+
+                                    <td>
+                                        {{ pago.fecha_vencimiento.strftime('%d/%m/%Y') }}
+                                    </td>
+
+                                    <td>
+
+                                        {% if pago.estado == "Vencido" %}
+
+                                        <span class="etiqueta-estado vencido">
+                                            Vencido
+                                        </span>
+
+                                        {% elif pago.estado == "Próximo a vencer" %}
+
+                                        <span class="etiqueta-estado proximo">
+                                            Próximo a vencer
+                                        </span>
+
+                                        {% else %}
+
+                                        <span class="etiqueta-estado pendiente">
+                                            Pendiente
+                                        </span>
+
+                                        {% endif %}
+
+                                    </td>
+                                </tr>
+
+                                {% else %}
+
+                                <tr>
+                                    <td colspan="5" class="sin-datos">
+                                        No hay facturas pendientes de pago.
+                                    </td>
+                                </tr>
+
+                                {% endfor %}
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                    <a
+                        href="{{ url_for('recordatorios') }}"
+                        class="ver-todos">
+                        Administrar recordatorios →
+                    </a>
+
+                </article>
+
+            </section>
+
+        </main>
 
     </div>
 
 </div>
 
-</body>
 
+<!-- ==========================================
+     DATOS DEL DASHBOARD DESDE FLASK
+========================================== -->
+
+<script id="datosDashboard" type="application/json">
+{
+    "nombresCategorias": {{ nombres_categorias | default([]) | tojson }},
+    "cantidadesCategorias": {{ cantidades_categorias | default([]) | tojson }},
+    "contactoCompleto": {{ contacto_completo | default(0) | tojson }},
+    "contactoParcial": {{ contacto_parcial | default(0) | tojson }},
+    "sinContacto": {{ sin_contacto | default(0) | tojson }},
+    "proveedoresPorMes": {{ proveedores_por_mes | default([]) | tojson }},
+    "pagosPorMes": {{ pagos_por_mes | default([]) | tojson }}
+}
+</script>
+
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    // ==========================================
+    // MENÚ LATERAL
+    // ==========================================
+
+    const menuToggle = document.getElementById("menuToggle");
+    const sidebar = document.getElementById("sidebar");
+
+    if (menuToggle && sidebar) {
+
+        menuToggle.addEventListener("click", function () {
+            sidebar.classList.toggle("oculto");
+        });
+
+    }
+
+
+    // ==========================================
+    // NOTIFICACIONES
+    // ==========================================
+
+    const botonCampana = document.getElementById("botonCampana");
+
+    const panelNotificaciones =
+        document.getElementById("panelNotificaciones");
+
+    const contenedorNotificaciones =
+        document.getElementById("notificaciones");
+
+    if (
+        botonCampana &&
+        panelNotificaciones &&
+        contenedorNotificaciones
+    ) {
+
+        botonCampana.addEventListener("click", function () {
+
+            const abrir = panelNotificaciones.hidden;
+
+            panelNotificaciones.hidden = !abrir;
+
+            botonCampana.setAttribute(
+                "aria-expanded",
+                String(abrir)
+            );
+
+        });
+
+        document.addEventListener("click", function (evento) {
+
+            if (!contenedorNotificaciones.contains(evento.target)) {
+
+                panelNotificaciones.hidden = true;
+
+                botonCampana.setAttribute(
+                    "aria-expanded",
+                    "false"
+                );
+
+            }
+
+        });
+
+        document.addEventListener("keydown", function (evento) {
+
+            if (
+                evento.key === "Escape" &&
+                !panelNotificaciones.hidden
+            ) {
+
+                panelNotificaciones.hidden = true;
+
+                botonCampana.setAttribute(
+                    "aria-expanded",
+                    "false"
+                );
+
+                botonCampana.focus();
+            }
+
+        });
+
+    }
+
+
+    // ==========================================
+    // DATOS DE FLASK
+    // ==========================================
+
+    const datosDashboard = JSON.parse(
+        document.getElementById("datosDashboard").textContent
+    );
+
+    const coloresCategorias = [
+        "#A780F5",
+        "#FF91C8",
+        "#36C09C",
+        "#FFA33E",
+        "#7DB7FF",
+        "#D4A5FF",
+        "#FFD166",
+        "#8DD3C7",
+        "#C7B8EA"
+    ];
+
+
+    // ==========================================
+    // TOOLTIP CON PORCENTAJES
+    // ==========================================
+
+    function etiquetaConPorcentaje(context) {
+
+        const valores = context.dataset.data;
+
+        const total = valores.reduce(
+            (suma, valor) => suma + Number(valor),
+            0
+        );
+
+        const cantidad = Number(context.parsed);
+
+        const porcentaje = total > 0
+            ? (cantidad / total * 100).toFixed(1)
+            : "0.0";
+
+        return (
+            context.label +
+            ": " +
+            cantidad +
+            " (" +
+            porcentaje +
+            "%)"
+        );
+    }
+
+
+    // ==========================================
+    // GRÁFICA 1: PROVEEDORES POR CATEGORÍA
+    // ==========================================
+
+    const canvasCategorias =
+        document.getElementById("graficaCategorias");
+
+    if (
+        canvasCategorias &&
+        datosDashboard.nombresCategorias.length > 0 &&
+        typeof Chart !== "undefined"
+    ) {
+
+        new Chart(canvasCategorias, {
+
+            type: "doughnut",
+
+            data: {
+                labels: datosDashboard.nombresCategorias,
+
+                datasets: [{
+                    label: "Proveedores por categoría",
+                    data: datosDashboard.cantidadesCategorias,
+                    backgroundColor: coloresCategorias,
+                    borderColor: "#FFFFFF",
+                    borderWidth: 3,
+                    hoverOffset: 8
+                }]
+            },
+
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: "65%",
+
+                plugins: {
+                    legend: {
+                        position: "bottom",
+
+                        labels: {
+                            usePointStyle: true,
+                            padding: 14,
+
+                            font: {
+                                size: 11
+                            }
+                        }
+                    },
+
+                    tooltip: {
+                        callbacks: {
+                            label: etiquetaConPorcentaje
+                        }
+                    }
+                }
+            }
+        });
+
+    }
+
+
+    // ==========================================
+    // GRÁFICA 2: CALIDAD DE CONTACTOS
+    // ==========================================
+
+    const canvasContactos =
+        document.getElementById("graficaContactos");
+
+    if (
+        canvasContactos &&
+        typeof Chart !== "undefined"
+    ) {
+
+        new Chart(canvasContactos, {
+
+            type: "doughnut",
+
+            data: {
+                labels: [
+                    "Contacto completo",
+                    "Contacto parcial",
+                    "Sin contacto"
+                ],
+
+                datasets: [{
+                    label: "Proveedores",
+
+                    data: [
+                        datosDashboard.contactoCompleto,
+                        datosDashboard.contactoParcial,
+                        datosDashboard.sinContacto
+                    ],
+
+                    backgroundColor: [
+                        "#36C09C",
+                        "#FFA33E",
+                        "#FF91C8"
+                    ],
+
+                    borderColor: "#FFFFFF",
+                    borderWidth: 3,
+                    hoverOffset: 8
+                }]
+            },
+
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: "65%",
+
+                plugins: {
+                    legend: {
+                        position: "bottom",
+
+                        labels: {
+                            usePointStyle: true,
+                            padding: 14,
+
+                            font: {
+                                size: 11
+                            }
+                        }
+                    },
+
+                    tooltip: {
+                        callbacks: {
+                            label: etiquetaConPorcentaje
+                        }
+                    }
+                }
+            }
+        });
+
+    }
+
+
+    // ==========================================
+    // GRÁFICAS 3 Y 4: DATOS MENSUALES
+    // ==========================================
+
+    const meses = [
+        "Ene", "Feb", "Mar", "Abr",
+        "May", "Jun", "Jul", "Ago",
+        "Sep", "Oct", "Nov", "Dic"
+    ];
+
+
+    function crearGraficaMensual(
+        idCanvas,
+        valores,
+        etiqueta,
+        color,
+        fondo,
+        esDinero = false
+    ) {
+
+        const canvas = document.getElementById(idCanvas);
+
+        if (
+            !canvas ||
+            typeof Chart === "undefined"
+        ) {
+            return;
+        }
+
+        new Chart(canvas, {
+
+            type: "line",
+
+            data: {
+                labels: meses,
+
+                datasets: [{
+                    label: etiqueta,
+                    data: valores,
+
+                    borderColor: color,
+                    backgroundColor: fondo,
+
+                    borderWidth: 3,
+
+                    fill: true,
+
+                    tension: 0.35,
+
+                    pointRadius: 4,
+                    pointHoverRadius: 7,
+
+                    pointBackgroundColor: color,
+                    pointBorderColor: "#FFFFFF",
+                    pointBorderWidth: 2
+                }]
+            },
+
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+
+                interaction: {
+                    intersect: false,
+                    mode: "index"
+                },
+
+                plugins: {
+
+                    legend: {
+                        display: false
+                    },
+
+                    tooltip: {
+
+                        callbacks: {
+
+                            label: function(context) {
+
+                                const valor = context.parsed.y;
+
+                                if (esDinero) {
+
+                                    return "$" +
+                                        valor.toLocaleString("es-MX", {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2
+                                        }) +
+                                        " MXN";
+
+                                }
+
+                                return valor + " proveedor(es)";
+                            }
+                        }
+                    }
+                },
+
+                scales: {
+
+                    x: {
+                        grid: {
+                            display: false
+                        },
+
+                        ticks: {
+                            color: "#776A92"
+                        }
+                    },
+
+                    y: {
+                        beginAtZero: true,
+
+                        grid: {
+                            color: "#F0EAF8"
+                        },
+
+                        ticks: {
+                            color: "#776A92",
+
+                            precision: esDinero ? undefined : 0,
+
+                            callback: function(valor) {
+
+                                if (esDinero) {
+                                    return "$" +
+                                        Number(valor).toLocaleString("es-MX");
+                                }
+
+                                return valor;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+
+    // ==========================================
+    // PROVEEDORES REGISTRADOS POR MES
+    // ==========================================
+
+    crearGraficaMensual(
+        "graficaProveedoresMes",
+
+        datosDashboard.proveedoresPorMes,
+
+        "Proveedores registrados",
+
+        "#A780F5",
+
+        "rgba(167, 128, 245, 0.12)",
+
+        false
+    );
+
+
+    // ==========================================
+    // PAGOS REALIZADOS POR MES
+    // ==========================================
+
+    crearGraficaMensual(
+        "graficaPagosMes",
+
+        datosDashboard.pagosPorMes,
+
+        "Pagos realizados",
+
+        "#36C09C",
+
+        "rgba(54, 192, 156, 0.12)",
+
+        true
+    );
+
+});
+
+</script>
+
+</body>
 </html>

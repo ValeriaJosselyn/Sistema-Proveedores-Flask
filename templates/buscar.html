@@ -1,173 +1,271 @@
+
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
-    <title>Sistema de Proveedores</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscar Proveedores | Sistema de Proveedores</title>
 
-    <link rel="manifest" href="/static/manifest.json">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/panel.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/proveedores-vistas.css') }}">
 </head>
-
 <body>
 
-    <header class="encabezado">
-        <div class="titulo">
-            <h1>Sistema de Proveedores</h1>
+<div class="layout">
+
+    <!-- Menú provisional. Se sustituirá por el menú exacto de panel.html -->
+    <aside class="sidebar oculto" id="sidebar">
+        <div class="logo">
+            <span class="logo-icono">✦</span>
+            <span>Sistema de<br>Proveedores</span>
         </div>
 
-        <a href="{{ url_for('login') }}" class="btn-login">
-            Iniciar sesión
-        </a>
+        <nav class="menu">
+            <a href="{{ url_for('panel') }}"> Inicio</a>
+            <a href="{{ url_for('mis_proveedores') }}"> Mis proveedores</a>
+            <a href="{{ url_for('buscar_proveedores') }}" class="activo"> Buscar proveedores</a>
+            <a href="{{ url_for('agregar_provider') }}"> Agregar proveedor</a>
+            <a href="{{ url_for('recordatorios') }}"> Recordatorios</a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <a href="{{ url_for('logout') }}">Cerrar sesión</a>
         </div>
-    </header>
+    </aside>
 
-    <div class="contenedor">
+    <main class="main">
 
-        <form method="GET" id="form-busqueda" onsubmit="event.preventDefault();">
+        <header class="topbar">
+            <button class="menu-toggle" id="menuToggle" type="button" aria-label="Abrir o cerrar menú">☰</button>
 
-            <input
-                type="text"
-                id="input-buscar"
-                name="buscar"
-                placeholder="🔍 Buscar proveedor por nombre o descripción..."
-                autocomplete="off">
+            <div class="perfil">
+                <div class="perfil-texto">
+                    <strong>{{ usuario | default('Administrador') }}</strong>
+                    <small>Panel administrativo</small>
+                </div>
+                <div class="avatar">👤</div>
+            </div>
+        </header>
 
-        </form>
+        <div class="contenido">
 
-        <div id="contenedor-resultados"></div>
+            <div class="bienvenida-superior">
+                <div class="bienvenida">
+                    <h1> Buscar Proveedores</h1>
+                    <p>Encuentra rápidamente proveedores por nombre, empresa, teléfono o servicio.</p>
+                </div>
+            </div>
 
-    </div>
+            <section class="vista-caja">
+                <div class="vista-caja-encabezado">
+                    <div>
+                        <h2>Directorio de proveedores</h2>
+                        <p>Consulta la información de contacto registrada en el sistema.</p>
+                    </div>
+                </div>
+
+                <form id="form-busqueda" class="vista-buscador">
+                    <span aria-hidden="true"></span>
+                    <input
+                        type="search"
+                        id="input-buscar"
+                        placeholder="Buscar por proveedor, empresa o servicio..."
+                        autocomplete="off"
+                        aria-label="Buscar proveedores"
+                    >
+                    <button type="submit">Buscar</button>
+                </form>
+
+                <p id="estado-busqueda" class="vista-estado" aria-live="polite">
+                    Escribe para comenzar a buscar proveedores.
+                </p>
+
+                <div id="contenedor-resultados" class="resultados-grid"></div>
+            </section>
+
+        </div>
+    </main>
+</div>
 
 <script>
+const sidebar = document.getElementById("sidebar");
+const menuToggle = document.getElementById("menuToggle");
 
-const adminId = "{{ admin_id }}";
+if (window.innerWidth > 650) {
+    sidebar.classList.remove("oculto");
+}
+
+menuToggle.addEventListener("click", () => {
+    sidebar.classList.toggle("oculto");
+});
 
 const inputBuscar = document.getElementById("input-buscar");
 const contenedorResultados = document.getElementById("contenedor-resultados");
+const estadoBusqueda = document.getElementById("estado-busqueda");
 
-// ==============================
-// BUSCAR PROVEEDORES
-// ==============================
-async function buscarProveedores() {
+let tiempoBusqueda;
+let controladorBusqueda;
 
-    const valor = inputBuscar.value.trim();
+function crearElemento(etiqueta, clase, texto) {
+    const elemento = document.createElement(etiqueta);
 
-    if (valor === "") {
+    if (clase) elemento.className = clase;
+    if (texto !== undefined) elemento.textContent = texto;
 
-        contenedorResultados.innerHTML = "";
+    return elemento;
+}
+
+function agregarDato(tarjeta, etiqueta, valor) {
+    const fila = crearElemento("div", "resultado-dato");
+    const titulo = crearElemento("span", "", etiqueta);
+    const contenido = crearElemento(
+        "strong",
+        "",
+        valor || "No registrado"
+    );
+
+    fila.append(titulo, contenido);
+    tarjeta.appendChild(fila);
+}
+
+function renderizarTarjetas(proveedores) {
+    contenedorResultados.replaceChildren();
+
+    if (proveedores.length === 0) {
+        estadoBusqueda.textContent = "No se encontraron proveedores.";
         return;
-
     }
 
-    try {
+    estadoBusqueda.textContent =
+        `${proveedores.length} proveedor(es) encontrado(s).`;
 
-        const respuesta = await fetch(`/buscar_api?buscar=${encodeURIComponent(valor)}&admin_id=${adminId}`);
+    proveedores.forEach(proveedor => {
+        const tarjeta = crearElemento("article", "resultado-card");
+
+        const encabezado = crearElemento("div", "resultado-encabezado");
+        const icono = crearElemento("div", "resultado-icono", "🏢");
+        const informacion = crearElemento("div", "resultado-identidad");
+
+        const nombre = crearElemento(
+            "h3",
+            "",
+            proveedor.nombre_proveedor || "Sin nombre"
+        );
+
+        const empresa = crearElemento(
+            "p",
+            "",
+            proveedor.nombre_empresa || "Empresa no registrada"
+        );
+
+        informacion.append(nombre, empresa);
+        encabezado.append(icono, informacion);
+
+        const datos = crearElemento("div", "resultado-datos");
+
+        agregarDato(datos, "📞 Teléfono", proveedor.telefono);
+        agregarDato(datos, "✉️ Correo", proveedor.correo);
+        agregarDato(datos, "📋 Servicio", proveedor.descripcion);
+
+        const boton = crearElemento(
+            "button",
+            "resultado-copiar",
+            "📋 Copiar contacto"
+        );
+
+        boton.type = "button";
+
+        boton.addEventListener("click", async () => {
+            const texto = [
+                `Proveedor: ${proveedor.nombre_proveedor || "No registrado"}`,
+                `Empresa: ${proveedor.nombre_empresa || "No registrada"}`,
+                `Teléfono: ${proveedor.telefono || "No registrado"}`,
+                `Correo: ${proveedor.correo || "No registrado"}`
+            ].join("\n");
+
+            try {
+                await navigator.clipboard.writeText(texto);
+                boton.textContent = "✓ Contacto copiado";
+
+                setTimeout(() => {
+                    boton.textContent = " Copiar contacto";
+                }, 1800);
+            } catch (error) {
+                alert("No fue posible copiar el contacto.");
+            }
+        });
+
+        tarjeta.append(encabezado, datos, boton);
+        contenedorResultados.appendChild(tarjeta);
+    });
+}
+
+async function buscarProveedores() {
+    const valor = inputBuscar.value.trim();
+
+    if (controladorBusqueda) {
+        controladorBusqueda.abort();
+    }
+
+    if (!valor) {
+        contenedorResultados.replaceChildren();
+        estadoBusqueda.textContent =
+            "Escribe para comenzar a buscar proveedores.";
+        return;
+    }
+
+    controladorBusqueda = new AbortController();
+    const controladorActual = controladorBusqueda;
+
+    estadoBusqueda.textContent = "Buscando proveedores...";
+
+    try {
+        const respuesta = await fetch(
+            `/buscar_api?buscar=${encodeURIComponent(valor)}`,
+            { signal: controladorActual.signal }
+        );
+
+        if (!respuesta.ok) {
+            throw new Error(`Error HTTP ${respuesta.status}`);
+        }
 
         const proveedores = await respuesta.json();
+
+        if (!Array.isArray(proveedores)) {
+            throw new Error("Respuesta inesperada del servidor.");
+        }
+
+        if (controladorActual.signal.aborted) return;
 
         renderizarTarjetas(proveedores);
 
     } catch (error) {
-
-        console.error("Error al buscar proveedores:", error);
-
-    }
-
-}
-
-// ==============================
-// PINTAR TARJETAS
-// ==============================
-function renderizarTarjetas(proveedores) {
-
-    contenedorResultados.innerHTML = "";
-
-    if (proveedores.length === 0) {
-
-        contenedorResultados.innerHTML =
-            '<div class="mensaje">No se encontraron proveedores.</div>';
-
-        return;
-
-    }
-
-    proveedores.forEach(proveedor => {
-
-        const tarjeta = document.createElement("div");
-
-        tarjeta.className = "tarjeta";
-
-        tarjeta.innerHTML = `
-
-            <h2>👤 ${proveedor.nombre_proveedor}</h2>
-
-            <p><strong>Empresa:</strong> ${proveedor.nombre_empresa}</p>
-
-            <p><strong>Teléfono:</strong> ${proveedor.telefono}</p>
-
-            <p><strong>Correo:</strong> ${proveedor.correo}</p>
-
-            <p><strong>Descripción:</strong> ${proveedor.descripcion}</p>
-
-            <button class="btn-copiar"
-            onclick="copiarContacto('${proveedor.nombre_proveedor}','${proveedor.telefono}','${proveedor.correo}')">
-
-                Copiar contacto
-
-            </button>
-
-        `;
-
-        contenedorResultados.appendChild(tarjeta);
-
-    });
-
-}
-
-// ==============================
-// COPIAR CONTACTO
-// ==============================
-function copiarContacto(nombre, telefono, correo) {
-
-    const texto =
-`Nombre: ${nombre}
-Teléfono: ${telefono}
-Correo: ${correo}`;
-
-    navigator.clipboard.writeText(texto)
-    .then(() => {
-
-        alert("¡Contacto copiado al portapapeles!");
-
-    })
-    .catch(error => {
+        if (error.name === "AbortError") return;
 
         console.error(error);
-
-    });
-
+        contenedorResultados.replaceChildren();
+        estadoBusqueda.textContent =
+            "No se pudieron consultar los proveedores. Intenta nuevamente.";
+    }
 }
 
-// ==============================
-// BÚSQUEDA EN TIEMPO REAL
-// ==============================
-let tiempoBusqueda;
-
 inputBuscar.addEventListener("input", () => {
-
     clearTimeout(tiempoBusqueda);
 
-    tiempoBusqueda = setTimeout(() => {
+    if (controladorBusqueda) {
+        controladorBusqueda.abort();
+    }
 
-        buscarProveedores();
-
-    }, 300);
-
+    tiempoBusqueda = setTimeout(buscarProveedores, 300);
 });
 
+document.getElementById("form-busqueda")
+    .addEventListener("submit", evento => {
+        evento.preventDefault();
+        clearTimeout(tiempoBusqueda);
+        buscarProveedores();
+    });
 </script>
 
 </body>
-
 </html>

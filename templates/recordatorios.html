@@ -1,0 +1,444 @@
+
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Recordatorios de pagos | Sistema de Proveedores</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/panel.css') }}">
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/recordatorios.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    <!-- MENÚ LATERAL -->
+    <aside class="sidebar" id="sidebar">
+
+        <div class="logo">
+            <span class="logo-icono">✦</span>
+            <span>Proveedores</span>
+        </div>
+
+        <nav class="menu">
+
+            <a href="{{ url_for('panel') }}">
+                ⌂ Inicio
+            </a>
+
+            <a href="{{ url_for('mis_proveedores') }}">
+                ▤ Proveedores
+            </a>
+
+            <a href="{{ url_for('panel') }}#graficas">
+                ◈ Dashboard
+            </a>
+
+            <a href="{{ url_for('recordatorios') }}"
+               class="activo">
+                ▣ Recordatorios de pagos
+            </a>
+
+            <a href="{{ url_for('restablecer_contrasena') }}">
+                ⚙ Configuración
+            </a>
+
+        </nav>
+
+        <div class="sidebar-footer">
+            <a href="{{ url_for('logout') }}">
+                ↪ Cerrar sesión
+            </a>
+        </div>
+
+    </aside>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <div class="main">
+
+        <header class="topbar">
+
+            <button class="menu-toggle"
+                    id="menuToggle"
+                    type="button"
+                    aria-label="Mostrar u ocultar menú">
+                ☰
+            </button>
+
+            <div class="perfil">
+
+                <div class="perfil-texto">
+                    <strong>{{ usuario }}</strong>
+                    <small>Administrador</small>
+                </div>
+
+                <div class="avatar">
+                    {{ usuario[0] | upper if usuario else 'A' }}
+                </div>
+
+            </div>
+
+        </header>
+
+        <main class="contenido">
+
+            <!-- ENCABEZADO -->
+            <div class="bienvenida-superior">
+
+                <div>
+                    <h1>Recordatorios de pagos </h1>
+
+                    <p>
+                        Organiza las facturas de tus proveedores,
+                        consulta sus vencimientos y registra
+                        los pagos realizados.
+                    </p>
+                </div>
+
+                <a href="{{ url_for('panel') }}"
+                   class="btn-agregar">
+                     Volver al panel
+                </a>
+
+            </div>
+
+            {% if error %}
+            <div class="alerta-error" role="alert">
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <!-- INDICADORES -->
+            <section class="resumen-pagos">
+
+                <article class="resumen-card resumen-morado">
+                    <span>Facturas registradas</span>
+                    <strong>{{ pagos | length }}</strong>
+                </article>
+
+                <article class="resumen-card resumen-naranja">
+                    <span>Pendientes</span>
+                    <strong>
+                        {{ pagos | rejectattr('pagado') | list | length }}
+                    </strong>
+                </article>
+
+                <article class="resumen-card resumen-verde">
+                    <span>Pagadas</span>
+                    <strong>
+                        {{ pagos | selectattr('pagado') | list | length }}
+                    </strong>
+                </article>
+
+            </section>
+
+            <!-- FORMULARIO -->
+            <section class="caja seccion-pagos">
+
+                <div class="seccion-encabezado">
+                    <div>
+                        <h2>Agregar nuevo recordatorio</h2>
+                        <p>
+                            Registra los datos de la factura
+                            que necesitas controlar.
+                        </p>
+                    </div>
+                </div>
+
+                <form method="POST"
+                      action="{{ url_for('recordatorios') }}"
+                      class="formulario-pagos">
+
+                    <input type="hidden"
+                           name="csrf_token"
+                           value="{{ csrf_token | default('') }}">
+
+                    <div class="campo-pago">
+
+                        <label for="id_proveedor">
+                            Proveedor
+                        </label>
+
+                        <select id="id_proveedor"
+                                name="id_proveedor"
+                                required>
+
+                            <option value="">
+                                Selecciona un proveedor
+                            </option>
+
+                            {% for proveedor in proveedores %}
+
+                            <option value="{{ proveedor.id }}">
+                                {{ proveedor.nombre_proveedor }}
+                                {% if proveedor.nombre_empresa %}
+                                    — {{ proveedor.nombre_empresa }}
+                                {% endif %}
+                            </option>
+
+                            {% endfor %}
+
+                        </select>
+
+                    </div>
+
+                    <div class="campo-pago">
+
+                        <label for="numero_factura">
+                            Número de factura
+                        </label>
+
+                        <input type="text"
+                               id="numero_factura"
+                               name="numero_factura"
+                               maxlength="100"
+                               placeholder="Ej. FAC-001"
+                               required>
+
+                    </div>
+
+                    <div class="campo-pago">
+
+                        <label for="monto">
+                            Monto de la factura (MXN)
+                        </label>
+
+                        <input type="number"
+                               id="monto"
+                               name="monto"
+                               min="0"
+                               max="9999999999.99"
+                               step="0.01"
+                               placeholder="Ej. 1250.00"
+                               required>
+
+                    </div>
+
+                    <div class="campo-pago">
+
+                        <label for="fecha_vencimiento">
+                            Fecha de vencimiento
+                        </label>
+
+                        <input type="date"
+                               id="fecha_vencimiento"
+                               name="fecha_vencimiento"
+                               required>
+
+                    </div>
+
+                    <div class="acciones-formulario">
+
+                        <button type="submit"
+                                class="boton-guardar"
+                                {% if not proveedores %}disabled{% endif %}>
+                             Guardar recordatorio
+                        </button>
+
+                    </div>
+
+                </form>
+
+                {% if not proveedores %}
+                <p class="aviso-pagos">
+                    Primero necesitas registrar un proveedor
+                    para poder agregar facturas.
+                </p>
+                {% endif %}
+
+            </section>
+
+            <!-- TABLA -->
+            <section class="caja seccion-pagos">
+
+                <div class="seccion-encabezado">
+
+                    <div>
+                        <h2>Facturas registradas</h2>
+                        <p>
+                            Consulta los pagos pendientes,
+                            vencidos y realizados.
+                        </p>
+                    </div>
+
+                </div>
+
+                <div class="tabla-contenido">
+
+                    <table class="tabla-proveedores tabla-recordatorios">
+
+                        <thead>
+                            <tr>
+                                <th>Proveedor</th>
+                                <th>Factura</th>
+                                <th>Monto</th>
+                                <th>Vencimiento</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                        {% for pago in pagos %}
+
+                            {% set estado = pago.estado | default(
+                                'Pagado' if pago.pagado
+                                else 'Pendiente'
+                            ) %}
+
+                            <tr>
+
+                                <td>
+                                    <strong>
+                                        {{ pago.nombre_proveedor }}
+                                    </strong>
+                                </td>
+
+                                <td>
+                                    {{ pago.numero_factura }}
+                                </td>
+
+                                <td class="monto-tabla">
+                                    ${{ '{:,.2f}'.format(pago.monto) }}
+                                </td>
+
+                                <td>
+                                    {{ pago.fecha_vencimiento.strftime('%d/%m/%Y') }}
+                                </td>
+
+                                <td>
+
+                                    {% if estado == 'Pagado' %}
+
+                                    <span class="etiqueta-estado pagado">
+                                        ✓ Pagado
+                                    </span>
+
+                                    {% elif estado == 'Vencido' %}
+
+                                    <span class="etiqueta-estado vencido">
+                                        Vencido
+                                    </span>
+
+                                    {% elif estado == 'Próximo a vencer' %}
+
+                                    <span class="etiqueta-estado proximo">
+                                        Próximo a vencer
+                                    </span>
+
+                                    {% else %}
+
+                                    <span class="etiqueta-estado pendiente">
+                                        Pendiente
+                                    </span>
+
+                                    {% endif %}
+
+                                </td>
+
+                                <td>
+
+                                    <div class="botones-tabla">
+
+                                        <a href="{{ url_for('editar_recordatorio', id_pago=pago.id) }}"
+                                           class="boton-editar">
+                                            Editar
+                                        </a>
+
+                                        <form method="POST"
+                                              action="{{ url_for('cambiar_estado_recordatorio', id_pago=pago.id) }}">
+
+                                            <input type="hidden"
+                                                   name="csrf_token"
+                                                   value="{{ csrf_token | default('') }}">
+
+                                            {% if pago.pagado %}
+
+                                            <input type="hidden"
+                                                   name="accion"
+                                                   value="reabrir">
+
+                                            <button type="submit"
+                                                    class="boton-estado">
+                                                Reabrir
+                                            </button>
+
+                                            {% else %}
+
+                                            <input type="hidden"
+                                                   name="accion"
+                                                   value="pagar">
+
+                                            <button type="submit"
+                                                    class="boton-estado">
+                                                Marcar pagada
+                                            </button>
+
+                                            {% endif %}
+
+                                        </form>
+
+                                        <form method="POST"
+                                              action="{{ url_for('eliminar_recordatorio', id_pago=pago.id) }}"
+                                              onsubmit="return confirm('¿Seguro que deseas eliminar esta factura?');">
+
+                                            <input type="hidden"
+                                                   name="csrf_token"
+                                                   value="{{ csrf_token | default('') }}">
+
+                                            <button type="submit"
+                                                    class="boton-eliminar">
+                                                Eliminar
+                                            </button>
+
+                                        </form>
+
+                                    </div>
+
+                                </td>
+
+                            </tr>
+
+                        {% else %}
+
+                            <tr>
+                                <td colspan="6" class="sin-datos">
+                                    Todavía no tienes facturas registradas.
+                                </td>
+                            </tr>
+
+                        {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+</div>
+
+<script>
+    const menuToggle = document.getElementById("menuToggle");
+    const sidebar = document.getElementById("sidebar");
+
+    menuToggle.addEventListener("click", function () {
+        sidebar.classList.toggle("oculto");
+    });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,401 @@
+
+/* ========================================
+   VISTAS: BUSCAR Y MIS PROVEEDORES
+   Complemento de panel.css
+======================================== */
+
+.vista-caja {
+    background: white;
+    border: 1px solid var(--borde);
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 4px 16px rgba(100, 70, 150, 0.05);
+}
+
+.vista-caja-encabezado {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    margin-bottom: 24px;
+}
+
+.vista-caja-encabezado h2 {
+    margin: 0 0 8px;
+    font-size: 18px;
+    color: #373c70;
+}
+
+.vista-caja-encabezado p {
+    margin: 0;
+    font-size: 13px;
+    color: #8583a4;
+    line-height: 1.6;
+}
+
+/* BUSCADOR */
+
+.vista-buscador,
+.vista-filtro-busqueda {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid #e5d8f6;
+    background: #fcfaff;
+    border-radius: 12px;
+    padding: 8px 10px 8px 16px;
+}
+
+.vista-buscador:focus-within,
+.vista-filtro-busqueda:focus-within {
+    border-color: #a780f5;
+    box-shadow: 0 0 0 3px rgba(167, 128, 245, 0.10);
+}
+
+.vista-buscador > span,
+.vista-filtro-busqueda > span {
+    font-size: 19px;
+}
+
+.vista-buscador input,
+.vista-filtro-busqueda input {
+    flex: 1;
+    min-width: 0;
+    padding: 12px 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    font: inherit;
+    font-size: 14px;
+    color: #373c70;
+}
+
+.vista-buscador button {
+    border: none;
+    border-radius: 9px;
+    padding: 13px 23px;
+    background: #a780f5;
+    color: white;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.vista-buscador button:hover {
+    background: #8f65e8;
+}
+
+.vista-estado {
+    font-size: 13px;
+    color: #8583a4;
+    margin: 20px 0;
+}
+
+/* RESULTADOS EN TARJETAS */
+
+.resultados-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.resultado-card {
+    min-width: 0;
+    padding: 22px;
+    background: white;
+    border: 1px solid #eee7f7;
+    border-radius: 14px;
+    box-shadow: 0 3px 12px rgba(100, 70, 150, 0.04);
+    transition: 0.2s;
+}
+
+.resultado-card:hover {
+    border-color: #d8c1fb;
+    transform: translateY(-2px);
+    box-shadow: 0 7px 20px rgba(100, 70, 150, 0.08);
+}
+
+.resultado-encabezado {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding-bottom: 17px;
+    border-bottom: 1px solid #f0e9f8;
+}
+
+.resultado-icono {
+    width: 50px;
+    height: 50px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 13px;
+    background: #f1eaff;
+    font-size: 24px;
+}
+
+.resultado-identidad {
+    min-width: 0;
+}
+
+.resultado-identidad h3 {
+    margin: 0 0 6px;
+    font-size: 15px;
+    color: #51438e;
+    overflow-wrap: anywhere;
+}
+
+.resultado-identidad p {
+    margin: 0;
+    font-size: 12px;
+    color: #8583a4;
+    overflow-wrap: anywhere;
+}
+
+.resultado-datos {
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+    padding: 18px 0;
+}
+
+.resultado-dato {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
+.resultado-dato span {
+    color: #8583a4;
+}
+
+.resultado-dato strong {
+    font-size: 13px;
+    font-weight: 500;
+    color: #373c70;
+    line-height: 1.5;
+}
+
+.resultado-copiar {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #e3d5fa;
+    border-radius: 9px;
+    background: #f7f0ff;
+    color: #8159c4;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.resultado-copiar:hover {
+    background: #eadcff;
+}
+
+/* MIS PROVEEDORES */
+
+.vista-filtros {
+    margin-bottom: 22px;
+}
+
+.vista-filtro-busqueda {
+    max-width: 620px;
+}
+
+.vista-tabla-scroll {
+    min-height: 0;
+    overflow-x: auto;
+}
+
+.vista-tabla {
+    min-width: 760px;
+}
+
+.vista-tabla th {
+    background: #f5edff;
+}
+
+.vista-tabla td {
+    padding: 17px 12px;
+    overflow-wrap: anywhere;
+}
+
+.vista-tabla tr[hidden] {
+    display: none;
+}
+
+.enlace-contacto {
+    color: #8159c4;
+    text-decoration: none;
+}
+
+.enlace-contacto:hover {
+    text-decoration: underline;
+}
+
+.texto-suave {
+    color: #a09ab3;
+}
+
+.vista-acciones {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.vista-btn-editar,
+.vista-btn-eliminar {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    padding: 9px 12px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.vista-btn-editar {
+    background: #f0e7ff;
+    color: #7955c6;
+}
+
+.vista-btn-editar:hover {
+    background: #e5d5ff;
+}
+
+.vista-btn-eliminar {
+    background: #ffe8f1;
+    color: #d65391;
+}
+
+.vista-btn-eliminar:hover {
+    background: #ffd6e6;
+}
+
+/* PAGINACIÓN */
+
+.vista-pie-tabla {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 15px;
+    padding-top: 22px;
+    font-size: 12px;
+    color: #8583a4;
+}
+
+.vista-paginacion {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.vista-paginacion button {
+    padding: 10px 14px;
+    border: 1px solid #e5d8f6;
+    border-radius: 8px;
+    background: white;
+    color: #7955c6;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.vista-paginacion button:hover:not(:disabled) {
+    background: #f5edff;
+}
+
+.vista-paginacion button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.vista-sin-resultados {
+    padding: 30px;
+    text-align: center;
+    color: #8583a4;
+    font-size: 13px;
+}
+
+.vista-sin-resultados[hidden] {
+    display: none;
+}
+
+/* ESTADO VACÍO */
+
+.vista-vacio {
+    padding: 55px 20px;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    text-align: center;
+}
+
+.vista-vacio > span {
+    font-size: 50px;
+}
+
+.vista-vacio h3 {
+    margin: 15px 0 8px;
+    color: #51438e;
+}
+
+.vista-vacio p {
+    margin: 0 0 20px;
+    font-size: 13px;
+    color: #8583a4;
+    line-height: 1.6;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 1000px) {
+    .resultados-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 650px) {
+    .vista-caja {
+        padding: 18px;
+    }
+
+    .vista-buscador {
+        flex-wrap: wrap;
+    }
+
+    .vista-buscador input {
+        flex-basis: calc(100% - 45px);
+    }
+
+    .vista-buscador button {
+        width: 100%;
+    }
+
+    .resultado-card {
+        padding: 18px;
+    }
+
+    .vista-pie-tabla {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+    }
+
+    .vista-paginacion {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+}
+
+.vista-btn-eliminar {
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 13px;
+}

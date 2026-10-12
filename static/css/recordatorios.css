@@ -1,0 +1,323 @@
+
+/* ==========================================
+   RECORDATORIOS DE PAGOS
+   ========================================== */
+
+:root {
+    --pago-morado: #a780f5;
+    --pago-morado-oscuro: #8055d5;
+    --pago-rosa: #ff91c8;
+    --pago-verde: #36c09c;
+    --pago-naranja: #ffa33e;
+    --pago-texto: #373c70;
+    --pago-borde: #eee7f7;
+}
+
+/* RESUMEN DE FACTURAS */
+
+.resumen-pagos {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+    margin: 25px 0;
+}
+
+.resumen-card {
+    padding: 23px;
+    border-radius: 17px;
+    background: white;
+    border: 1px solid var(--pago-borde);
+    box-shadow: 0 4px 16px rgba(100, 75, 140, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.resumen-card span {
+    color: #85809c;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.resumen-card strong {
+    font-size: 34px;
+    color: var(--pago-texto);
+}
+
+.resumen-morado {
+    border-top: 4px solid var(--pago-morado);
+}
+
+.resumen-naranja {
+    border-top: 4px solid var(--pago-naranja);
+}
+
+.resumen-verde {
+    border-top: 4px solid var(--pago-verde);
+}
+
+/* SECCIONES */
+
+.seccion-pagos {
+    margin-bottom: 22px;
+}
+
+.seccion-encabezado {
+    margin-bottom: 23px;
+}
+
+.seccion-encabezado h1,
+.seccion-encabezado h2 {
+    color: var(--pago-texto);
+    margin: 0 0 8px;
+}
+
+.seccion-encabezado h2 {
+    font-size: 19px;
+}
+
+.seccion-encabezado p {
+    color: #8d88a5;
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* FORMULARIO */
+
+.formulario-pagos {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+}
+
+.campo-pago {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    min-width: 0;
+}
+
+.campo-pago label {
+    font-size: 13px;
+    color: #51438e;
+    font-weight: 600;
+}
+
+.campo-pago input,
+.campo-pago select {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 13px 14px;
+    border: 1px solid #e4dbf2;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 14px;
+    background: #fff;
+    color: var(--pago-texto);
+    transition: border-color 0.2s;
+}
+
+.campo-pago input:focus,
+.campo-pago select:focus {
+    outline: none;
+    border-color: var(--pago-morado);
+    box-shadow: 0 0 0 3px rgba(167, 128, 245, 0.12);
+}
+
+/* BOTONES DEL FORMULARIO */
+
+.acciones-formulario {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.boton-guardar {
+    background: linear-gradient(
+        135deg,
+        #a780f5,
+        #b784f7
+    );
+    border: none;
+    color: white;
+    padding: 13px 23px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: transform 0.2s, opacity 0.2s;
+}
+
+.boton-guardar:hover {
+    transform: translateY(-2px);
+}
+
+.boton-guardar:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.boton-cancelar {
+    display: inline-block;
+    padding: 12px 18px;
+    border-radius: 10px;
+    text-decoration: none;
+    background: #f2edfa;
+    color: #7754b5;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* TABLA */
+
+.tabla-recordatorios {
+    min-width: 880px;
+}
+
+.monto-tabla {
+    font-weight: 700;
+    color: #5c4798;
+    white-space: nowrap;
+}
+
+/* ESTADOS */
+
+.etiqueta-estado {
+    display: inline-block;
+    padding: 7px 11px;
+    border-radius: 30px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.etiqueta-estado.pagado {
+    background: #e1f7ec;
+    color: #23855e;
+}
+
+.etiqueta-estado.pendiente {
+    background: #eee8ff;
+    color: #7955c6;
+}
+
+.etiqueta-estado.proximo {
+    background: #fff1d8;
+    color: #a66b12;
+}
+
+.etiqueta-estado.vencido {
+    background: #ffe5eb;
+    color: #c34565;
+}
+
+/* ACCIONES DE TABLA */
+
+.botones-tabla {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 7px;
+}
+
+.botones-tabla form {
+    margin: 0;
+}
+
+.botones-tabla button,
+.boton-editar {
+    display: inline-block;
+    padding: 8px 11px;
+    border: none;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    text-decoration: none;
+    font-family: inherit;
+}
+
+.boton-editar {
+    background: #eee7ff;
+    color: #7954c3;
+}
+
+.boton-estado {
+    background: #e2f7ed;
+    color: #27815c;
+}
+
+.boton-eliminar {
+    background: #ffe8ee;
+    color: #c34565;
+}
+
+.boton-editar:hover,
+.boton-estado:hover,
+.boton-eliminar:hover {
+    filter: brightness(0.97);
+}
+
+/* MENSAJES */
+
+.alerta-error {
+    padding: 13px 16px;
+    background: #fff0f3;
+    border: 1px solid #ffc1d0;
+    border-radius: 10px;
+    color: #b93d5d;
+    margin: 18px 0;
+}
+
+.aviso-pagos {
+    color: #a16c19;
+    background: #fff6e6;
+    padding: 13px;
+    border-radius: 10px;
+    font-size: 13px;
+    margin-top: 18px;
+}
+
+/* PÁGINA DE EDICIÓN */
+
+.pagina-editar {
+    background: #fbfaff;
+    min-height: 100vh;
+}
+
+.contenedor-editar {
+    width: min(850px, calc(100% - 32px));
+    margin: 60px auto;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 900px) {
+    .resumen-pagos {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 650px) {
+    .resumen-pagos {
+        grid-template-columns: 1fr;
+    }
+
+    .formulario-pagos {
+        grid-template-columns: 1fr;
+    }
+
+    .acciones-formulario {
+        grid-column: 1;
+    }
+
+    .contenedor-editar {
+        margin: 25px auto;
+    }
+}
