@@ -476,6 +476,44 @@ def panel():
 
                 notificaciones_pago = cursor.fetchall()
 
+                
+                # --------------------------------------
+                # GRÁFICA: ESTADO DE LAS FACTURAS
+                # --------------------------------------
+
+                cursor.execute(f"""
+                    SELECT
+                        COUNT(*) FILTER (
+                            WHERE r.pagado = TRUE
+                        ) AS pagadas,
+
+                        COUNT(*) FILTER (
+                            WHERE r.pagado = FALSE
+                              AND r.fecha_vencimiento >
+                                  CURRENT_DATE + INTERVAL '7 days'
+                        ) AS pendientes,
+
+                        COUNT(*) FILTER (
+                            WHERE r.pagado = FALSE
+                              AND r.fecha_vencimiento >= CURRENT_DATE
+                              AND r.fecha_vencimiento <=
+                                  CURRENT_DATE + INTERVAL '7 days'
+                        ) AS proximas,
+
+                        COUNT(*) FILTER (
+                            WHERE r.pagado = FALSE
+                              AND r.fecha_vencimiento < CURRENT_DATE
+                        ) AS vencidas
+
+                    FROM public.recordatorios_pago r
+                    INNER JOIN public.proveedor p
+                        ON p.id = r.id_proveedor
+                    WHERE {filtro_sql}
+                """, parametros)
+
+                estados_facturas = dict(cursor.fetchone())
+
+
                 # --------------------------------------
                 # GRÁFICA: PROVEEDORES POR MES
                 # --------------------------------------
@@ -611,6 +649,7 @@ def panel():
             anios_disponibles=anios_disponibles,
             categorias_disponibles=categorias_disponibles,
             anio_graficas=anio_graficas,
+            estados_facturas=estados_facturas,
 
             **indicadores,
             **indicadores_pagos

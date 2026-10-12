@@ -551,45 +551,48 @@
                 </article>
 
 
-                <!-- CALIDAD DE CONTACTOS -->
+                <!-- Estado de las facturas-->
 
                 <article class="caja">
 
-                    <h2>Calidad de información de contacto</h2>
+                    <h2>Estado de las facturas</h2>
 
                     <p class="subtitulo-grafica">
-                        Disponibilidad de correo y teléfono
-                        en los registros de proveedores
+                         Distribución de facturas pagadas, pendientes,
+                         próximas a vencer y vencidas.
                     </p>
 
-                    {% if total_proveedores | default(0) > 0 %}
 
-                    <div class="grafica-categorias">
-                        <canvas id="graficaContactos"></canvas>
-                    </div>
+                    {% set total_facturas =
+                         estados_facturas.pagadas +
+                         estados_facturas.pendientes +
+                         estados_facturas.proximas +
+                         estados_facturas.vencidas
+                    %}
 
-                    <p class="nota-grafica">
-                        Completo: correo y teléfono.
-                        Parcial: solo uno de los dos.
-                    </p>
+                    {% if total_facturas > 0 %}
 
+
+
+                         <div class="grafica-categorias">
+                              <canvas id="graficaEstadosFacturas"></canvas>
+                         </div>
+
+                         <p class="nota-grafica"></p>
+                              Total de facturas registradas:
+                              <strong>{{ total_facturas }}</strong>
+                         </p>
+     
                     {% else %}
-
-                    <div class="grafica-vacia">
-                        <span>✉</span>
-
-                        <p>
-                            Registra proveedores para analizar
-                            sus datos de contacto.
-                        </p>
-                    </div>
-
+                         <div class="grafica-vacia"></div>
+                         <span>▣</span>
+                         <p>
+                             Todavía no hay facturas registradas.
+                         </p>
                     {% endif %}
 
-                </article>
-
-            </section>
-
+               </article>
+                    
 
             <!-- ==========================================
                  NUEVAS GRÁFICAS MENSUALES
@@ -827,7 +830,9 @@
     "contactoParcial": {{ contacto_parcial | default(0) | tojson }},
     "sinContacto": {{ sin_contacto | default(0) | tojson }},
     "proveedoresPorMes": {{ proveedores_por_mes | default([]) | tojson }},
-    "pagosPorMes": {{ pagos_por_mes | default([]) | tojson }}
+    "pagosPorMes": {{ pagos_por_mes | default([]) | tojson }},
+    "estadosFacturas": {{ estados_facturas | tojson }}
+
 }
 </script>
 
@@ -1032,80 +1037,82 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 
-    // ==========================================
-    // GRÁFICA 2: CALIDAD DE CONTACTOS
-    // ==========================================
 
-    const canvasContactos =
-        document.getElementById("graficaContactos");
+// ==========================================
+// GRÁFICA 2: ESTADO DE LAS FACTURAS
+// ==========================================
 
-    if (
-        canvasContactos &&
-        typeof Chart !== "undefined"
-    ) {
+const canvasEstadosFacturas =
+    document.getElementById("graficaEstadosFacturas");
 
-        new Chart(canvasContactos, {
+if (
+    canvasEstadosFacturas &&
+    typeof Chart !== "undefined"
+) {
 
-            type: "doughnut",
+    new Chart(canvasEstadosFacturas, {
 
-            data: {
-                labels: [
-                    "Contacto completo",
-                    "Contacto parcial",
-                    "Sin contacto"
+        type: "doughnut",
+
+        data: {
+            labels: [
+                "Pagadas",
+                "Pendientes",
+                "Próximas a vencer",
+                "Vencidas"
+            ],
+
+            datasets: [{
+                label: "Cantidad de facturas",
+
+                data: [
+                    datosDashboard.estadosFacturas.pagadas,
+                    datosDashboard.estadosFacturas.pendientes,
+                    datosDashboard.estadosFacturas.proximas,
+                    datosDashboard.estadosFacturas.vencidas
                 ],
 
-                datasets: [{
-                    label: "Proveedores",
+                backgroundColor: [
+                    "#36C09C",
+                    "#A780F5",
+                    "#FFA33E",
+                    "#FF638F"
+                ],
 
-                    data: [
-                        datosDashboard.contactoCompleto,
-                        datosDashboard.contactoParcial,
-                        datosDashboard.sinContacto
-                    ],
+                borderColor: "#FFFFFF",
+                borderWidth: 3,
+                hoverOffset: 8
+            }]
+        },
 
-                    backgroundColor: [
-                        "#36C09C",
-                        "#FFA33E",
-                        "#FF91C8"
-                    ],
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "65%",
 
-                    borderColor: "#FFFFFF",
-                    borderWidth: 3,
-                    hoverOffset: 8
-                }]
-            },
+            plugins: {
+                legend: {
+                    position: "bottom",
 
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: "65%",
+                    labels: {
+                        usePointStyle: true,
+                        padding: 14,
 
-                plugins: {
-                    legend: {
-                        position: "bottom",
-
-                        labels: {
-                            usePointStyle: true,
-                            padding: 14,
-
-                            font: {
-                                size: 11
-                            }
+                        font: {
+                            size: 11
                         }
-                    },
+                    }
+                },
 
-                    tooltip: {
-                        callbacks: {
-                            label: etiquetaConPorcentaje
-                        }
+                tooltip: {
+                    callbacks: {
+                        label: etiquetaConPorcentaje
                     }
                 }
             }
-        });
-
-    }
-
+        }
+    });
+}
 
     // ==========================================
     // GRÁFICAS 3 Y 4: DATOS MENSUALES
