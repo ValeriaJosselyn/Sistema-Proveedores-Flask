@@ -346,51 +346,29 @@
             </select>
         </div>
 
-        <!-- CONTACTO -->
-        <div class="filtro-grupo">
-            <label for="filtroContacto">Estado de contacto</label>
+<!-- EMPRESA -->
+<div class="filtro-grupo">
+    <label for="filtroEmpresa">Empresa</label>
 
-            <select
-                name="contacto"
-                id="filtroContacto"
-            >
-                <option
-                    value="todos"
-                    {% if contacto_seleccionado == 'todos' %}
-                    selected
-                    {% endif %}
-                >
-                    Todos los contactos
-                </option>
+    <select name="empresa" id="filtroEmpresa">
+        <option value="todas"
+            {% if empresa_seleccionada == 'todas' %}
+                selected
+            {% endif %}>
+            Todas las empresas
+        </option>
 
-                <option
-                    value="completo"
-                    {% if contacto_seleccionado == 'completo' %}
+        {% for empresa in empresas_disponibles %}
+            <option value="{{ empresa }}"
+                {% if empresa_seleccionada == empresa %}
                     selected
-                    {% endif %}
-                >
-                    Contacto completo
-                </option>
+                {% endif %}>
+                {{ empresa }}
+            </option>
+        {% endfor %}
+    </select>
+</div>
 
-                <option
-                    value="parcial"
-                    {% if contacto_seleccionado == 'parcial' %}
-                    selected
-                    {% endif %}
-                >
-                    Contacto parcial
-                </option>
-
-                <option
-                    value="sin"
-                    {% if contacto_seleccionado == 'sin' %}
-                    selected
-                    {% endif %}
-                >
-                    Sin contacto
-                </option>
-            </select>
-        </div>
 
         <div class="filtros-botones">
             <button
@@ -631,7 +609,7 @@
 
                     <p class="subtitulo-grafica">
                         Monto total de facturas marcadas
-                        como pagadas durante {{ hoy.year }}.
+                        como pagadas durante {{ anio_graficas }}.
                     </p>
 
                     <div class="grafica-mensual">

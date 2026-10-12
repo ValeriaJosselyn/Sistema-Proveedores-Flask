@@ -170,8 +170,10 @@ def validar_login():
 
 
 
+
 # ==========================================
 # PANEL PRINCIPAL CON 3 SEGMENTADORES
+# PERIODO, CATEGORÍA Y EMPRESA
 # ==========================================
 
 @app.route("/panel")
@@ -182,18 +184,18 @@ def panel():
     hoy = date.today()
     limite_proximo = hoy + timedelta(days=7)
 
-    # --------------------------------------
-    # FILTROS RECIBIDOS DESDE EL DASHBOARD
-    # --------------------------------------
+    # FILTROS DEL DASHBOARD
+    anio_solicitado = request.args.get(
+        "periodo", "todos"
+    ).strip()
 
-    anio_solicitado = request.args.get("periodo", "todos").strip()
-    categoria_solicitada = request.args.get("categoria", "todas").strip()
-    contacto_solicitado = request.args.get("contacto", "todos").strip()
+    categoria_solicitada = request.args.get(
+        "categoria", "todas"
+    ).strip()
 
-    if contacto_solicitado not in (
-        "todos", "completo", "parcial", "sin"
-    ):
-        contacto_solicitado = "todos"
+    empresa_solicitada = request.args.get(
+        "empresa", "todas"
+    ).strip()
 
     try:
         with conectar_bd() as conexion:
@@ -201,9 +203,9 @@ def panel():
                 cursor_factory=RealDictCursor
             ) as cursor:
 
-                # --------------------------------------
-                # OPCIONES REALES PARA LOS SEGMENTADORES
-                # --------------------------------------
+                # ==================================
+                # CATEGORÍAS DISPONIBLES
+                # ==================================
 
                 cursor.execute("""
                     SELECT c.id, c.nombre
@@ -214,33 +216,91 @@ def panel():
                 categorias_disponibles = cursor.fetchall()
 
                 ids_categorias = {
-                    str(c["id"]) for c in categorias_disponibles
+                    str(c["id"])
+                    for c in categorias_disponibles
                 }
 
                 if categoria_solicitada not in ids_categorias:
                     categoria_solicitada = "todas"
 
+                # ==================================
+                # EMPRESAS DISPONIBLES
+                # ==================================
+
+                cursor.execute("""
+                    SELECT DISTINCT ON (
+                        LOWER(BTRIM(nombre_empresa))
+                    )
+                        BTRIM(nombre_empresa) AS nombre_empresa
+
+                    FROM public.proveedor
+
+                    WHERE id_usuario = %s
+                      AND NULLIF(
+                          BTRIM(nombre_empresa), ''
+                      ) IS NOT NULL
+
+                    ORDER BY
+                        LOWER(BTRIM(nombre_empresa)),
+                        BTRIM(nombre_empresa)
+                """, (id_admin,))
+
+                empresas_disponibles = sorted(
+                    [
+                        fila["nombre_empresa"]
+                        for fila in cursor.fetchall()
+                    ],
+                    key=str.casefold
+                )
+
+                # Validar que la empresa exista
+                empresas_validas = {
+                    empresa.casefold(): empresa
+                    for empresa in empresas_disponibles
+                }
+
+                if empresa_solicitada != "todas":
+                    empresa_solicitada = (
+                        empresas_validas.get(
+                            empresa_solicitada.casefold(),
+                            "todas"
+                        )
+                    )
+
+                # ==================================
+                # PERIODOS DISPONIBLES
+                # ==================================
+
                 cursor.execute("""
                     SELECT DISTINCT anio
                     FROM (
                         SELECT
-                            EXTRACT(YEAR FROM p.fecha_registro)::int
-                            AS anio
+                            EXTRACT(
+                                YEAR FROM p.fecha_registro
+                            )::int AS anio
+
                         FROM public.proveedor p
+
                         WHERE p.id_usuario = %s
                           AND p.fecha_registro IS NOT NULL
 
                         UNION
 
                         SELECT
-                            EXTRACT(YEAR FROM r.fecha_pago)::int
-                            AS anio
+                            EXTRACT(
+                                YEAR FROM r.fecha_pago
+                            )::int AS anio
+
                         FROM public.recordatorios_pago r
+
                         INNER JOIN public.proveedor p
                             ON p.id = r.id_proveedor
+
                         WHERE p.id_usuario = %s
                           AND r.fecha_pago IS NOT NULL
+
                     ) AS periodos
+
                     WHERE anio IS NOT NULL
                     ORDER BY anio DESC
                 """, (id_admin, id_admin))
@@ -251,45 +311,50 @@ def panel():
                 ]
 
                 if hoy.year not in anios_disponibles:
-                    anios_disponibles.insert(0, hoy.year)
+                    anios_disponibles.append(hoy.year)
 
                 anios_disponibles = sorted(
                     set(anios_disponibles),
                     reverse=True
                 )
 
-                if (
-                    anio_solicitado != "todos"
-                    and (
+                if anio_solicitado != "todos":
+                    if (
                         not anio_solicitado.isdigit()
                         or int(anio_solicitado)
                         not in anios_disponibles
-                    )
-                ):
-                    anio_solicitado = "todos"
+                    ):
+                        anio_solicitado = "todos"
 
-                # Si no hay un año seleccionado,
-                # las gráficas mensuales mostrarán el actual.
                 anio_graficas = (
                     int(anio_solicitado)
                     if anio_solicitado != "todos"
                     else hoy.year
                 )
 
-                # --------------------------------------
-                # CONSTRUIR FILTROS SEGUROS PARA SQL
-                # --------------------------------------
+                # ==================================
+                # CONSTRUIR FILTROS SQL
+                # ==================================
 
                 condiciones = ["p.id_usuario = %s"]
                 parametros = [id_admin]
 
+                # Filtro por periodo
                 if anio_solicitado != "todos":
-                    condiciones.append("""
-                        EXTRACT(YEAR FROM p.fecha_registro)::int = %s
-                    """)
-                    parametros.append(int(anio_solicitado))
 
+                    condiciones.append("""
+                        EXTRACT(
+                            YEAR FROM p.fecha_registro
+                        )::int = %s
+                    """)
+
+                    parametros.append(
+                        int(anio_solicitado)
+                    )
+
+                # Filtro por categoría
                 if categoria_solicitada != "todas":
+
                     condiciones.append("""
                         EXISTS (
                             SELECT 1
@@ -298,7 +363,30 @@ def panel():
                               AND pc_filtro.id_categoria = %s
                         )
                     """)
-                    parametros.append(int(categoria_solicitada))
+
+                    parametros.append(
+                        int(categoria_solicitada)
+                    )
+
+                # NUEVO FILTRO POR EMPRESA
+                if empresa_solicitada != "todas":
+
+                    condiciones.append("""
+                        LOWER(BTRIM(p.nombre_empresa))
+                        = LOWER(%s)
+                    """)
+
+                    parametros.append(
+                        empresa_solicitada
+                    )
+
+                filtro_sql = " AND ".join(condiciones)
+                parametros = tuple(parametros)
+
+                # ==================================
+                # CALIDAD DE DATOS DE CONTACTO
+                # SE CONSERVA EL KPI EXISTENTE
+                # ==================================
 
                 tiene_correo = """
                     NULLIF(BTRIM(p.correo), '') IS NOT NULL
@@ -308,27 +396,9 @@ def panel():
                     NULLIF(BTRIM(p.telefono), '') IS NOT NULL
                 """
 
-                if contacto_solicitado == "completo":
-                    condiciones.append(
-                        f"({tiene_correo} AND {tiene_telefono})"
-                    )
-
-                elif contacto_solicitado == "parcial":
-                    condiciones.append(
-                        f"(({tiene_correo}) <> ({tiene_telefono}))"
-                    )
-
-                elif contacto_solicitado == "sin":
-                    condiciones.append(
-                        f"(NOT ({tiene_correo}) AND NOT ({tiene_telefono}))"
-                    )
-
-                filtro_sql = " AND ".join(condiciones)
-                parametros = tuple(parametros)
-
-                # --------------------------------------
+                # ==================================
                 # INDICADORES DE PROVEEDORES
-                # --------------------------------------
+                # ==================================
 
                 cursor.execute(f"""
                     SELECT
@@ -363,9 +433,9 @@ def panel():
 
                 indicadores = dict(cursor.fetchone())
 
-                # --------------------------------------
+                # ==================================
                 # PROVEEDORES RECIENTES
-                # --------------------------------------
+                # ==================================
 
                 cursor.execute(f"""
                     SELECT
@@ -375,17 +445,20 @@ def panel():
                         p.descripcion,
                         p.correo,
                         p.telefono
+
                     FROM public.proveedor p
+
                     WHERE {filtro_sql}
+
                     ORDER BY p.id DESC
                     LIMIT 5
                 """, parametros)
 
                 proveedores_recientes = cursor.fetchall()
 
-                # --------------------------------------
+                # ==================================
                 # PROVEEDORES POR CATEGORÍA
-                # --------------------------------------
+                # ==================================
 
                 cursor.execute(f"""
                     WITH proveedores_filtrados AS (
@@ -393,41 +466,53 @@ def panel():
                         FROM public.proveedor p
                         WHERE {filtro_sql}
                     )
+
                     SELECT
                         c.nombre AS categoria,
                         COUNT(DISTINCT pf.id) AS total
+
                     FROM proveedores_filtrados pf
+
                     INNER JOIN public.proveedor_categoria pc
                         ON pc.id_proveedor = pf.id
+
                     INNER JOIN public.categorias c
                         ON c.id = pc.id_categoria
+
                     GROUP BY c.id, c.nombre
                     ORDER BY total DESC, c.nombre ASC
                 """, parametros)
 
                 resultados_categorias = cursor.fetchall()
 
-                # --------------------------------------
-                # PAGOS PENDIENTES DE LOS PROVEEDORES
-                # QUE CUMPLEN LOS FILTROS
-                # --------------------------------------
+                # ==================================
+                # INDICADORES DE PAGOS PENDIENTES
+                # ==================================
 
                 cursor.execute(f"""
                     SELECT
                         COUNT(*) AS total_pagos_pendientes,
-                        COALESCE(SUM(r.monto), 0) AS monto_pendiente
+
+                        COALESCE(
+                            SUM(r.monto), 0
+                        ) AS monto_pendiente
+
                     FROM public.recordatorios_pago r
+
                     INNER JOIN public.proveedor p
                         ON p.id = r.id_proveedor
+
                     WHERE {filtro_sql}
                       AND r.pagado = FALSE
                 """, parametros)
 
-                indicadores_pagos = dict(cursor.fetchone())
+                indicadores_pagos = dict(
+                    cursor.fetchone()
+                )
 
-                # --------------------------------------
+                # ==================================
                 # TABLA DE PAGOS PENDIENTES
-                # --------------------------------------
+                # ==================================
 
                 cursor.execute(f"""
                     SELECT
@@ -436,24 +521,28 @@ def panel():
                         r.monto,
                         r.fecha_vencimiento,
                         p.nombre_proveedor
+
                     FROM public.recordatorios_pago r
+
                     INNER JOIN public.proveedor p
                         ON p.id = r.id_proveedor
+
                     WHERE {filtro_sql}
                       AND r.pagado = FALSE
+
                     ORDER BY
                         r.fecha_vencimiento ASC,
                         r.id ASC
+
                     LIMIT 5
                 """, parametros)
 
                 pagos_proximos = cursor.fetchall()
 
-                # --------------------------------------
+                # ==================================
                 # CAMPANITA DE NOTIFICACIONES
-                # NO SE FILTRA: SE CONSERVAN TODAS
-                # LAS ALERTAS DEL ADMINISTRADOR
-                # --------------------------------------
+                # NO SE FILTRA POR EMPRESA
+                # ==================================
 
                 cursor.execute("""
                     SELECT
@@ -462,13 +551,17 @@ def panel():
                         r.monto,
                         r.fecha_vencimiento,
                         p.nombre_proveedor
+
                     FROM public.recordatorios_pago r
+
                     INNER JOIN public.proveedor p
                         ON p.id = r.id_proveedor
+
                     WHERE p.id_usuario = %s
                       AND r.pagado = FALSE
                       AND r.fecha_vencimiento
                           <= CURRENT_DATE + INTERVAL '7 days'
+
                     ORDER BY
                         r.fecha_vencimiento ASC,
                         r.id ASC
@@ -476,10 +569,9 @@ def panel():
 
                 notificaciones_pago = cursor.fetchall()
 
-                
-                # --------------------------------------
+                # ==================================
                 # GRÁFICA: ESTADO DE LAS FACTURAS
-                # --------------------------------------
+                # ==================================
 
                 cursor.execute(f"""
                     SELECT
@@ -506,63 +598,77 @@ def panel():
                         ) AS vencidas
 
                     FROM public.recordatorios_pago r
+
                     INNER JOIN public.proveedor p
                         ON p.id = r.id_proveedor
+
                     WHERE {filtro_sql}
                 """, parametros)
 
-                estados_facturas = dict(cursor.fetchone())
+                estados_facturas = dict(
+                    cursor.fetchone()
+                )
 
-
-                # --------------------------------------
+                # ==================================
                 # GRÁFICA: PROVEEDORES POR MES
-                # --------------------------------------
+                # ==================================
 
                 cursor.execute(f"""
                     SELECT
                         EXTRACT(
                             MONTH FROM p.fecha_registro
                         )::int AS mes,
+
                         COUNT(*)::int AS total
+
                     FROM public.proveedor p
+
                     WHERE {filtro_sql}
                       AND EXTRACT(
                           YEAR FROM p.fecha_registro
                       )::int = %s
+
                     GROUP BY mes
                     ORDER BY mes
                 """, parametros + (anio_graficas,))
 
                 registros_mensuales = cursor.fetchall()
 
-                # --------------------------------------
+                # ==================================
                 # GRÁFICA: PAGOS REALIZADOS POR MES
-                # --------------------------------------
+                # ==================================
 
                 cursor.execute(f"""
                     SELECT
                         EXTRACT(
                             MONTH FROM r.fecha_pago
                         )::int AS mes,
-                        COALESCE(SUM(r.monto), 0) AS total
+
+                        COALESCE(
+                            SUM(r.monto), 0
+                        ) AS total
+
                     FROM public.recordatorios_pago r
+
                     INNER JOIN public.proveedor p
                         ON p.id = r.id_proveedor
+
                     WHERE {filtro_sql}
                       AND r.pagado = TRUE
                       AND r.fecha_pago IS NOT NULL
                       AND EXTRACT(
                           YEAR FROM r.fecha_pago
                       )::int = %s
+
                     GROUP BY mes
                     ORDER BY mes
                 """, parametros + (anio_graficas,))
 
                 pagos_mensuales = cursor.fetchall()
 
-        # --------------------------------------
+        # ==================================
         # PREPARAR DATOS PARA CHART.JS
-        # --------------------------------------
+        # ==================================
 
         nombres_categorias = [
             fila["categoria"]
@@ -576,7 +682,9 @@ def panel():
 
         total_categorias = len(nombres_categorias)
 
-        total = int(indicadores["total_proveedores"])
+        total = int(
+            indicadores["total_proveedores"]
+        )
 
         porcentaje_contacto = (
             round(
@@ -593,15 +701,21 @@ def panel():
 
         for fila in registros_mensuales:
             mes = int(fila["mes"])
-            proveedores_por_mes[mes - 1] = int(fila["total"])
+
+            proveedores_por_mes[mes - 1] = int(
+                fila["total"]
+            )
 
         for fila in pagos_mensuales:
             mes = int(fila["mes"])
-            pagos_por_mes[mes - 1] = float(fila["total"])
 
-        # --------------------------------------
-        # CLASIFICACIÓN DE FACTURAS
-        # --------------------------------------
+            pagos_por_mes[mes - 1] = float(
+                fila["total"]
+            )
+
+        # ==================================
+        # CLASIFICAR FACTURAS EN LA TABLA
+        # ==================================
 
         for pago in pagos_proximos:
 
@@ -614,9 +728,9 @@ def panel():
             else:
                 pago["estado"] = "Pendiente"
 
-        # --------------------------------------
+        # ==================================
         # ENVIAR DATOS AL DASHBOARD
-        # --------------------------------------
+        # ==================================
 
         return render_template(
             "panel.html",
@@ -642,13 +756,16 @@ def panel():
             hoy=hoy,
             limite_proximo=limite_proximo,
 
-            # Nuevas variables de los filtros
             periodo_seleccionado=anio_solicitado,
             categoria_seleccionada=categoria_solicitada,
-            contacto_seleccionado=contacto_solicitado,
+
+            empresa_seleccionada=empresa_solicitada,
+            empresas_disponibles=empresas_disponibles,
+
             anios_disponibles=anios_disponibles,
             categorias_disponibles=categorias_disponibles,
             anio_graficas=anio_graficas,
+
             estados_facturas=estados_facturas,
 
             **indicadores,
