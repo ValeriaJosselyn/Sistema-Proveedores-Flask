@@ -1,0 +1,726 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | Vista de demostración</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f8f5fc;
+            color: #382e47;
+        }
+
+        header {
+            background: white;
+            padding: 20px 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            box-shadow: 0 2px 10px #6d3f9d12;
+        }
+
+        header strong {
+            color: #8249b8;
+            font-size: 21px;
+        }
+
+        .acceso {
+            color: #8249b8;
+            text-decoration: none;
+            padding: 10px 15px;
+            border: 1px solid #d8c4ed;
+            border-radius: 10px;
+        }
+
+        main {
+            max-width: 1250px;
+            margin: auto;
+            padding: 25px;
+        }
+
+        .bienvenida {
+            background: linear-gradient(110deg, #8145bf, #ba8be9);
+            color: white;
+            border-radius: 18px;
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+
+        .bienvenida h1 {
+            margin: 0 0 10px;
+        }
+
+        .bienvenida p {
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        .etiqueta {
+            display: inline-block;
+            color: #6d3f9d;
+            background: #f1e7fc;
+            padding: 8px 13px;
+            border-radius: 15px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .caja {
+            background: white;
+            border: 1px solid #eee4f4;
+            border-radius: 16px;
+            padding: 22px;
+            box-shadow: 0 3px 12px #6d3f9d0a;
+        }
+
+        .caja h2 {
+            margin-top: 0;
+            font-size: 19px;
+        }
+
+        .filtros,
+        .tarjetas {
+            display: grid;
+            gap: 15px;
+        }
+
+        .filtros {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        select {
+            width: 100%;
+            padding: 11px;
+            border: 1px solid #ded3e8;
+            border-radius: 9px;
+            background: white;
+        }
+
+        .botones {
+            margin-top: 16px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .boton {
+            border: none;
+            background: #8548be;
+            color: white;
+            border-radius: 9px;
+            padding: 12px 18px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .secundario {
+            background: #f0e8f9;
+            color: #7140a7;
+        }
+
+        .tarjetas {
+            grid-template-columns: repeat(4, 1fr);
+            margin: 20px 0;
+        }
+
+        .tarjeta small {
+            color: #756a83;
+        }
+
+        .tarjeta strong {
+            display: block;
+            margin: 12px 0;
+            font-size: 29px;
+            color: #8548be;
+            overflow-wrap: anywhere;
+        }
+
+        .tarjeta p {
+            font-size: 12px;
+            color: #82738d;
+        }
+
+        .graficas,
+        .tablas {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 18px;
+            margin: 20px 0;
+        }
+
+        .grafica {
+            position: relative;
+            height: 300px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 11px;
+            border-bottom: 1px solid #eee7f5;
+        }
+
+        th {
+            background: #faf6fe;
+            color: #7140a7;
+        }
+
+        .tabla-scroll {
+            overflow-x: auto;
+        }
+
+        .nota {
+            font-size: 13px;
+            line-height: 1.6;
+            color: #756a83;
+        }
+
+        @media (max-width: 850px) {
+            .tarjetas {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .graficas,
+            .tablas {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 550px) {
+            .filtros,
+            .tarjetas {
+                grid-template-columns: 1fr;
+            }
+
+            main {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <strong>✦ Sistema de Proveedores</strong>
+
+    <div>
+        <span class="etiqueta">
+            Vista demo · Solo lectura
+        </span>
+
+        <a class="acceso" href="{{ url_for('login') }}">
+            Iniciar sesión
+        </a>
+    </div>
+</header>
+
+<main>
+
+    <!-- BIENVENIDA -->
+    <section class="bienvenida">
+        <h1>Dashboard de proveedores</h1>
+        <p>
+            Bienvenido a la demostración del Sistema de Proveedores
+            del área de compras del CRIT Baja California.
+            Explora los indicadores, gráficas y filtros utilizando
+            información completamente ficticia.
+        </p>
+    </section>
+
+    <!-- FILTROS -->
+    <section class="caja">
+        <h2>⚙ Filtros del dashboard</h2>
+
+        <form method="GET" action="{{ url_for('demo') }}">
+
+            <div class="filtros">
+
+                <div>
+                    <label for="periodo">Periodo</label>
+
+                    <select name="periodo" id="periodo">
+                        <option value="todos"
+                            {% if periodo_seleccionado == "todos" %}
+                                selected
+                            {% endif %}>
+                            Todos los años
+                        </option>
+
+                        {% for anio in anios_disponibles %}
+                        <option value="{{ anio }}"
+                            {% if periodo_seleccionado == anio|string %}
+                                selected
+                            {% endif %}>
+                            {{ anio }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label for="categoria">Categoría</label>
+
+                    <select name="categoria" id="categoria">
+                        <option value="todas"
+                            {% if categoria_seleccionada == "todas" %}
+                                selected
+                            {% endif %}>
+                            Todas las categorías
+                        </option>
+
+                        {% for categoria in categorias_disponibles %}
+                        <option value="{{ categoria.id }}"
+                            {% if categoria_seleccionada == categoria.id|string %}
+                                selected
+                            {% endif %}>
+                            {{ categoria.nombre }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label for="empresa">Empresa</label>
+
+                    <select name="empresa" id="empresa">
+                        <option value="todas"
+                            {% if empresa_seleccionada == "todas" %}
+                                selected
+                            {% endif %}>
+                            Todas las empresas
+                        </option>
+
+                        {% for empresa in empresas_disponibles %}
+                        <option value="{{ empresa }}"
+                            {% if empresa_seleccionada == empresa %}
+                                selected
+                            {% endif %}>
+                            {{ empresa }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+            </div>
+
+            <div class="botones">
+                <button class="boton" type="submit">
+                    Aplicar filtros
+                </button>
+
+                <a class="boton secundario"
+                   href="{{ url_for('demo') }}">
+                    Limpiar filtros
+                </a>
+            </div>
+        </form>
+
+        <p class="nota">
+            {% if periodo_seleccionado == "todos" %}
+                Los indicadores muestran todos los periodos.
+                Las gráficas mensuales corresponden al año
+                {{ anio_graficas }}.
+            {% else %}
+                Los datos se encuentran filtrados por el año
+                {{ periodo_seleccionado }}.
+            {% endif %}
+        </p>
+    </section>
+
+    <!-- OCHO INDICADORES -->
+    <section class="tarjetas">
+
+        <article class="caja tarjeta">
+            <small>Total de proveedores</small>
+            <strong>{{ total_proveedores | default(0) }}</strong>
+            <p>Proveedores registrados</p>
+        </article>
+
+        <article class="caja tarjeta">
+            <small>Empresas registradas</small>
+            <strong>{{ total_empresas | default(0) }}</strong>
+            <p>Empresas diferentes</p>
+        </article>
+
+        <article class="caja tarjeta">
+            <small>Categorías utilizadas</small>
+            <strong>{{ total_categorias | default(0) }}</strong>
+            <p>Categorías con proveedores</p>
+        </article>
+
+        <article class="caja tarjeta">
+            <small>Facturas pendientes</small>
+            <strong>
+                {{ total_pagos_pendientes | default(0) }}
+            </strong>
+            <p>Facturas sin pagar</p>
+        </article>
+
+        <article class="caja tarjeta">
+            <small>Monto pendiente</small>
+            <strong>
+                ${{ "{:,.2f}".format(monto_pendiente | default(0)) }}
+            </strong>
+            <p>MXN pendientes de pago</p>
+        </article>
+
+        <article class="caja tarjeta">
+            <small>Facturas pagadas</small>
+            <strong>
+                {{ estados_facturas.pagadas | default(0) }}
+            </strong>
+            <p>Facturas liquidadas</p>
+        </article>
+
+        <article class="caja tarjeta">
+            <small>Próximas a vencer</small>
+            <strong>
+                {{ estados_facturas.proximas | default(0) }}
+            </strong>
+            <p>Vencen hoy o en los próximos 7 días</p>
+        </article>
+
+        <article class="caja tarjeta">
+            <small>Facturas vencidas</small>
+            <strong>
+                {{ estados_facturas.vencidas | default(0) }}
+            </strong>
+            <p>Facturas fuera de plazo</p>
+        </article>
+
+    </section>
+
+    <!-- CUATRO GRÁFICAS -->
+    <section class="graficas">
+
+        <article class="caja">
+            <h2>Proveedores por categoría</h2>
+            <div class="grafica">
+                <canvas id="graficaCategorias"></canvas>
+            </div>
+        </article>
+
+        <article class="caja">
+            <h2>Estado de las facturas</h2>
+            <div class="grafica">
+                <canvas id="graficaEstados"></canvas>
+            </div>
+        </article>
+
+        <article class="caja">
+            <h2>Proveedores registrados por mes</h2>
+            <div class="grafica">
+                <canvas id="graficaProveedoresMes"></canvas>
+            </div>
+        </article>
+
+        <article class="caja">
+            <h2>Pagos realizados por mes</h2>
+            <div class="grafica">
+                <canvas id="graficaPagosMes"></canvas>
+            </div>
+        </article>
+
+    </section>
+
+    <!-- TABLAS -->
+    <section class="tablas">
+
+        <article class="caja">
+            <h2>Proveedores recientes</h2>
+
+            <div class="tabla-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Proveedor</th>
+                            <th>Empresa</th>
+                            <th>Producto / servicio</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for proveedor in proveedores_recientes %}
+                        <tr>
+                            <td>
+                                {{ proveedor.nombre_proveedor }}
+                            </td>
+
+                            <td>
+                                {{ proveedor.nombre_empresa or "—" }}
+                            </td>
+
+                            <td>
+                                {{ proveedor.descripcion or "—" }}
+                            </td>
+                        </tr>
+
+                        {% else %}
+                        <tr>
+                            <td colspan="3">
+                                No hay proveedores registrados.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </article>
+
+        <article class="caja">
+            <h2>Recordatorios de pagos</h2>
+
+            <div class="tabla-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Proveedor</th>
+                            <th>Factura</th>
+                            <th>Monto</th>
+                            <th>Vencimiento</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for pago in pagos_proximos %}
+                        <tr>
+                            <td>{{ pago.nombre_proveedor }}</td>
+                            <td>{{ pago.numero_factura }}</td>
+
+                            <td>
+                                ${{ "{:,.2f}".format(pago.monto) }}
+                            </td>
+
+                            <td>
+                                {{ pago.fecha_vencimiento.strftime("%d/%m/%Y") }}
+                            </td>
+
+                            <td>
+                                {{ pago.estado }}
+                            </td>
+                        </tr>
+
+                        {% else %}
+                        <tr>
+                            <td colspan="5">
+                                No hay facturas pendientes.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </article>
+
+    </section>
+
+    <!-- AVISO ACADÉMICO -->
+    <p class="nota">
+        Esta vista presenta información ficticia con fines
+        académicos y de demostración del proyecto de tesis.
+
+        Los datos visualizados no corresponden a registros
+        institucionales reales del CRIT Baja California.
+
+        La demostración permite consultar indicadores,
+        gráficas y filtros sin realizar operaciones administrativas.
+    </p>
+
+</main>
+
+<!-- DATOS DESDE FLASK -->
+<script id="datosDashboard" type="application/json">
+{{ {
+    "nombresCategorias": nombres_categorias,
+    "cantidadesCategorias": cantidades_categorias,
+    "estadosFacturas": estados_facturas,
+    "proveedoresPorMes": proveedores_por_mes,
+    "pagosPorMes": pagos_por_mes
+} | tojson }}
+</script>
+
+<!-- CHART.JS -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const datos = JSON.parse(
+        document.getElementById("datosDashboard").textContent
+    );
+
+    const meses = [
+        "Ene", "Feb", "Mar", "Abr",
+        "May", "Jun", "Jul", "Ago",
+        "Sep", "Oct", "Nov", "Dic"
+    ];
+
+    const colores = [
+        "#A780F5",
+        "#FF91C8",
+        "#36C09C",
+        "#FFA33E",
+        "#7DB7FF",
+        "#D4A5FF",
+        "#FFD166",
+        "#8DD3C7"
+    ];
+
+    const opciones = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: "bottom"
+            }
+        }
+    };
+
+    function crearDona(id, etiquetas, valores, coloresGrafica) {
+        const elemento = document.getElementById(id);
+
+        if (!elemento) return;
+
+        new Chart(elemento, {
+            type: "doughnut",
+
+            data: {
+                labels: etiquetas,
+
+                datasets: [{
+                    data: valores,
+                    backgroundColor: coloresGrafica,
+                    borderWidth: 3,
+                    borderColor: "#ffffff"
+                }]
+            },
+
+            options: {
+                ...opciones,
+                cutout: "65%"
+            }
+        });
+    }
+
+    function crearLinea(id, valores, esDinero = false) {
+        const elemento = document.getElementById(id);
+
+        if (!elemento) return;
+
+        new Chart(elemento, {
+            type: "line",
+
+            data: {
+                labels: meses,
+
+                datasets: [{
+                    data: valores,
+                    borderColor: esDinero ? "#36C09C" : "#A780F5",
+
+                    backgroundColor: esDinero
+                        ? "rgba(54,192,156,0.12)"
+                        : "rgba(167,128,245,0.12)",
+
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 4
+                }]
+            },
+
+            options: {
+                ...opciones,
+
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    if (typeof Chart !== "undefined") {
+
+        // GRÁFICA 1
+        crearDona(
+            "graficaCategorias",
+            datos.nombresCategorias,
+            datos.cantidadesCategorias,
+            colores
+        );
+
+        // GRÁFICA 2
+        crearDona(
+            "graficaEstados",
+
+            [
+                "Pagadas",
+                "Pendientes",
+                "Próximas a vencer",
+                "Vencidas"
+            ],
+
+            [
+                datos.estadosFacturas.pagadas,
+                datos.estadosFacturas.pendientes,
+                datos.estadosFacturas.proximas,
+                datos.estadosFacturas.vencidas
+            ],
+
+            [
+                "#36C09C",
+                "#A780F5",
+                "#FFA33E",
+                "#FF638F"
+            ]
+        );
+
+        // GRÁFICA 3
+        crearLinea(
+            "graficaProveedoresMes",
+            datos.proveedoresPorMes
+        );
+
+        // GRÁFICA 4
+        crearLinea(
+            "graficaPagosMes",
+            datos.pagosPorMes,
+            true
+        );
+    }
+});
+</script>
+
+</body>
+</html>

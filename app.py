@@ -179,8 +179,18 @@ def validar_login():
 @app.route("/panel")
 @login_requerido
 def panel():
+    # El panel privado utiliza la sesión de cada administradora.
+    return mostrar_dashboard(session["id_usuario"])
 
-    id_admin = session["id_usuario"]
+
+@app.route("/demo")
+def demo():
+    # ÚNICAMENTE datos ficticios del usuario de pruebas Susana (ID 1).
+    # No inicia sesión ni concede permisos administrativos.
+    return mostrar_dashboard(1, modo_demo=True)
+
+
+def mostrar_dashboard(id_admin, modo_demo=False):
     hoy = date.today()
     limite_proximo = hoy + timedelta(days=7)
 
@@ -757,9 +767,9 @@ def panel():
         # ==================================
 
         return render_template(
-            "panel.html",
+            "demo.html" if modo_demo else "panel.html",
 
-            usuario=session["usuario"],
+            usuario="Demostración" if modo_demo else session["usuario"],
 
             proveedores_recientes=proveedores_recientes,
 
